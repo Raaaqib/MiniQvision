@@ -26,6 +26,11 @@ cameras:
     fps_target: 10
     width: 640
     height: 480
+    # Dual-stream: detect at 320x240 (∼3x faster ONNX), record at 640x480
+    detect_width: 320
+    detect_height: 240
+    detect_fps: 5
+    # detect_url: "rtsp://rtsp:8554/cam1_sub"  # uncomment if camera has a sub-stream
     min_contour_area: 1500
     motion_threshold: 0.02  # 2% of frame — filters noise, triggers ONNX on real motion
     retain_days: 7
@@ -39,6 +44,9 @@ cameras:
     fps_target: 10
     width: 640
     height: 480
+    detect_width: 320
+    detect_height: 240
+    detect_fps: 5
     min_contour_area: 1500
     motion_threshold: 0.02
     retain_days: 7
@@ -52,6 +60,9 @@ cameras:
     fps_target: 10
     width: 640
     height: 480
+    detect_width: 320
+    detect_height: 240
+    detect_fps: 5
     min_contour_area: 1500
     motion_threshold: 0.02
     retain_days: 7
@@ -65,6 +76,9 @@ cameras:
     fps_target: 10
     width: 640
     height: 480
+    detect_width: 320
+    detect_height: 240
+    detect_fps: 5
     min_contour_area: 1500
     motion_threshold: 0.02
     retain_days: 7

@@ -112,8 +112,11 @@ def motion_process(
         total_frames += 1
         now = time.time()
 
+        # Use detect_frame (low-res) for MOG2 if available — faster and still accurate
+        inference_frame = packet.detect_frame if packet.detect_frame is not None else packet.frame
+
         # Run classical CV
-        motion, boxes, score = detector.detect(packet.frame)
+        motion, boxes, score = detector.detect(inference_frame)
 
         packet.motion_detected = motion
         packet.motion_boxes = boxes
@@ -133,14 +136,19 @@ def motion_process(
         except Exception:
             pass
 
-        # Forward to detection pool only if motion (with cooldown)
-        if motion and (now - last_motion_time) >= MOTION_COOLDOWN_S:
+        # Forward to detection pool only if motion score exceeds threshold (with cooldown)
+        # motion_threshold gates out tiny noise/flickers — only real motion triggers ONNX
+        if motion and score >= config.motion_threshold and (now - last_motion_time) >= MOTION_COOLDOWN_S:
             last_motion_time = now
             motion_frame_count += 1
             try:
                 detection_queue.put_nowait(packet)
             except Exception:
                 pass  # drop if detection pool is busy
+        elif motion and score < config.motion_threshold:
+            # Score too low — suppress ONNX, log occasionally
+            if total_frames % 100 == 0:
+                logger.debug(f"Motion suppressed: score={score:.4f} < threshold={config.motion_threshold}")
 
     logger.info(f"Motion process stopped. "
                 f"Processed {total_frames} frames, "

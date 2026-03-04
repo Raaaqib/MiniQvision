@@ -26,9 +26,23 @@ def capture_process(
     """
     Entry point for the capture process.
     Reads frames and pushes FramePackets to motion_queue.
+
+    Dual-stream support:
+      When detect_width/detect_height are configured (and differ from width/height),
+      each FramePacket carries:
+        .frame        — full-res, used for recording & JPEG preview
+        .detect_frame — downscaled, used for motion + ONNX (much faster)
+      For RTSP cameras with detect_url set, a second FFmpeg process opens the
+      sub-stream and its frames are used as detect_frame directly.
     """
     logging.basicConfig(level=logging.INFO,
                         format=f"[Capture:{config.id}] %(levelname)s %(message)s")
+
+    if config.dual_stream_enabled:
+        logger.info(
+            f"Dual-stream active: record={config.width}x{config.height} "
+            f"detect={config.effective_detect_width}x{config.effective_detect_height}"
+        )
 
     state = CameraState(camera_id=config.id)
     _update_state(state_dict, config.id, state)
@@ -51,8 +65,26 @@ def capture_process(
     logger.info("Capture process stopped")
 
 
+def _make_detect_frame(frame, config: CameraConfig):
+    """
+    Return a downscaled frame for motion + ONNX inference.
+    Returns None if detect resolution == record resolution (no downscale needed).
+    """
+    if not config.dual_stream_enabled:
+        return None
+    return cv2.resize(
+        frame,
+        (config.effective_detect_width, config.effective_detect_height),
+        interpolation=cv2.INTER_LINEAR,
+    )
+
+
 def _run_rtsp(config, motion_queue, state_dict, state, stop_event):
-    """RTSP capture via FFmpeg pipe."""
+    """RTSP capture via FFmpeg pipe. Dispatches to dual-stream handler when detect_url is set."""
+    if config.detect_url:
+        _run_rtsp_dual(config, motion_queue, state_dict, state, stop_event)
+        return
+
     reader = FFmpegReader(config)
     if not reader.open():
         raise ConnectionError(f"FFmpeg failed to open {config.source}")
@@ -73,6 +105,7 @@ def _run_rtsp(config, motion_queue, state_dict, state, stop_event):
             packet = FramePacket(
                 camera_id=config.id,
                 frame=frame,
+                detect_frame=_make_detect_frame(frame, config),
             )
 
             try:
@@ -93,6 +126,95 @@ def _run_rtsp(config, motion_queue, state_dict, state, stop_event):
             state.last_frame_time = time.time()
             _update_state(state_dict, config.id, state)
 
+    finally:
+        reader.close()
+        state.connected = False
+        _update_state(state_dict, config.id, state)
+
+
+def _run_rtsp_dual(config, motion_queue, state_dict, state, stop_event):
+    """
+    True dual-stream RTSP: simultaneous main (high-res record) + sub (low-res detect).
+      config.source     — main RTSP URL, full resolution, used for .frame (recording)
+      config.detect_url — sub-stream RTSP URL, low resolution, used for .detect_frame
+    A background thread reads the sub-stream continuously; the latest frame is stamped
+    into every FramePacket produced by the main stream reader.
+    """
+    import threading
+
+    detect_cfg = CameraConfig(
+        id=config.id, name=config.name,
+        source=config.detect_url,
+        fps_target=config.effective_detect_fps,
+        width=config.effective_detect_width,
+        height=config.effective_detect_height,
+    )
+
+    latest_detect: list = [None]
+    detect_lock = threading.Lock()
+
+    def _sub_stream_thread():
+        det_reader = FFmpegReader(detect_cfg)
+        if not det_reader.open():
+            logger.warning(f"Sub-stream failed to open: {config.detect_url}")
+            return
+        try:
+            for dframe in det_reader.frames():
+                if stop_event.is_set():
+                    break
+                with detect_lock:
+                    latest_detect[0] = dframe
+        finally:
+            det_reader.close()
+
+    sub_thread = threading.Thread(
+        target=_sub_stream_thread, daemon=True, name=f"sub:{config.id}"
+    )
+    sub_thread.start()
+    logger.info(f"Sub-stream reader started: {config.detect_url}")
+
+    reader = FFmpegReader(config)
+    if not reader.open():
+        raise ConnectionError(f"FFmpeg failed to open main stream: {config.source}")
+
+    state.connected = True
+    state.error = None
+    _update_state(state_dict, config.id, state)
+
+    fps_counter = _FPSCounter()
+    jpeg_key = f"{config.id}:jpeg"
+    bbox_key = f"{config.id}:bboxes"
+
+    try:
+        for frame in reader.frames():
+            if stop_event.is_set():
+                break
+
+            with detect_lock:
+                detect_frame = latest_detect[0]
+
+            packet = FramePacket(
+                camera_id=config.id,
+                frame=frame,
+                detect_frame=detect_frame,
+            )
+
+            try:
+                motion_queue.put_nowait(packet)
+            except Exception:
+                pass
+
+            try:
+                display = _draw_cached_bboxes(frame, state_dict.get(bbox_key))
+                _, jpeg_buf = cv2.imencode('.jpg', display, [cv2.IMWRITE_JPEG_QUALITY, 70])
+                state_dict[jpeg_key] = jpeg_buf.tobytes()
+            except Exception:
+                pass
+
+            state.frame_count += 1
+            state.fps = fps_counter.tick()
+            state.last_frame_time = time.time()
+            _update_state(state_dict, config.id, state)
     finally:
         reader.close()
         state.connected = False
@@ -133,7 +255,11 @@ def _run_usb(config, motion_queue, state_dict, state, stop_event):
                 raise ConnectionError("USB camera read failed")
 
             frame = cv2.resize(frame, (config.width, config.height))
-            packet = FramePacket(camera_id=config.id, frame=frame)
+            packet = FramePacket(
+                camera_id=config.id,
+                frame=frame,
+                detect_frame=_make_detect_frame(frame, config),
+            )
 
             try:
                 motion_queue.put_nowait(packet)

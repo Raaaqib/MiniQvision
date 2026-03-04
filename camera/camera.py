@@ -49,6 +49,11 @@ class FramePacket:
     """
     Unit of data flowing through the pipeline.
     Passed between processes via queues.
+
+    Dual-stream support:
+      frame        — full-resolution frame, used for recording & JPEG preview
+      detect_frame — optional low-resolution copy, used for motion + ONNX inference
+                     If None, pipeline stages fall back to using frame.
     """
     camera_id: str
     frame: np.ndarray
@@ -57,6 +62,7 @@ class FramePacket:
     motion_boxes: list = field(default_factory=list)
     detections: list = field(default_factory=list)
     tracked_objects: list = field(default_factory=list)
+    detect_frame: Optional[np.ndarray] = None  # low-res copy for motion+AI
 
     @property
     def has_motion(self) -> bool:

@@ -75,8 +75,26 @@ def detection_worker(
 
         processed += 1
 
-        # AI inference
-        detections = detector.detect(packet.frame, packet.camera_id)
+        # Use detect_frame (low-res copy) for ONNX inference when available.
+        # This is the core dual-stream benefit: 320x240 ONNX is ~3x faster than 640x480.
+        # After inference, scale bounding boxes back to full-res (packet.frame) coordinates.
+        inference_frame = packet.detect_frame if packet.detect_frame is not None else packet.frame
+        detections = detector.detect(inference_frame, packet.camera_id)
+
+        # Scale bbox coords from detect resolution → record resolution if needed
+        if packet.detect_frame is not None and detections:
+            rec_h, rec_w = packet.frame.shape[:2]
+            det_h, det_w = packet.detect_frame.shape[:2]
+            if rec_w != det_w or rec_h != det_h:
+                x_scale = rec_w / det_w
+                y_scale = rec_h / det_h
+                for d in detections:
+                    x1, y1, x2, y2 = d.bbox
+                    d.bbox = (
+                        int(x1 * x_scale), int(y1 * y_scale),
+                        int(x2 * x_scale), int(y2 * y_scale),
+                    )
+
         packet.detections = detections
 
         if detections:

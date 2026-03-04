@@ -37,6 +37,17 @@ class CameraConfig:
     zones: list = field(default_factory=list)
     # Retain
     retain_days: int = DEFAULT_RETAIN_DAYS
+    # ── Dual-stream (detect vs record) ───────────────────────────────────────
+    # detect_width/height: resolution used for motion detection + ONNX inference
+    #   Set lower than width/height to trade accuracy for CPU speed.
+    #   0 = use the same resolution as the record stream (no downscale).
+    detect_width: int = 0
+    detect_height: int = 0
+    detect_fps: int = 0             # 0 = same as fps_target
+    # detect_url: optional RTSP sub-stream URL (e.g. a camera's low-res stream).
+    #   When set, a second FFmpeg reader opens this URL for motion+detection.
+    #   When empty, frames are downscaled in software from the main stream.
+    detect_url: str = ""
 
     @property
     def is_rtsp(self) -> bool:
@@ -47,6 +58,26 @@ class CameraConfig:
         if self.is_rtsp:
             return self.source
         return int(self.source)
+
+    @property
+    def effective_detect_width(self) -> int:
+        """Actual width used for detect stream (falls back to record width)."""
+        return self.detect_width if self.detect_width > 0 else self.width
+
+    @property
+    def effective_detect_height(self) -> int:
+        """Actual height used for detect stream (falls back to record height)."""
+        return self.detect_height if self.detect_height > 0 else self.height
+
+    @property
+    def effective_detect_fps(self) -> int:
+        """Actual FPS used for detect stream (falls back to fps_target)."""
+        return self.detect_fps if self.detect_fps > 0 else self.fps_target
+
+    @property
+    def dual_stream_enabled(self) -> bool:
+        """True if detect resolution differs from record resolution."""
+        return self.effective_detect_width != self.width or self.effective_detect_height != self.height
 
     def validate(self):
         assert self.id,    f"Camera missing id"
@@ -161,9 +192,13 @@ def load_config(path: str = "config.yaml") -> RaaqibConfig:
             width=cam_raw.get("width", DEFAULT_WIDTH),
             height=cam_raw.get("height", DEFAULT_HEIGHT),
             min_contour_area=cam_raw.get("min_contour_area", MIN_CONTOUR_AREA),
-            motion_threshold=cam_raw.get("motion_threshold", 0.5),
+            motion_threshold=cam_raw.get("motion_threshold", 0.02),
             zones=cam_raw.get("zones", []),
             retain_days=cam_raw.get("retain_days", DEFAULT_RETAIN_DAYS),
+            detect_width=cam_raw.get("detect_width", 0),
+            detect_height=cam_raw.get("detect_height", 0),
+            detect_fps=cam_raw.get("detect_fps", 0),
+            detect_url=cam_raw.get("detect_url", ""),
         )
         cam.validate()
         config.cameras.append(cam)

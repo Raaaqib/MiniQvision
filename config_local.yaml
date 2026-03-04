@@ -17,8 +17,12 @@ cameras:
     fps_target: 10
     width: 640
     height: 480
+    # Dual-stream: detect at half-res — ~3x faster ONNX, same accuracy for close-range
+    detect_width: 320
+    detect_height: 240
+    detect_fps: 5          # only 5fps needed for AI — halves detection CPU load
     min_contour_area: 1500
-    motion_threshold: 0.7
+    motion_threshold: 0.005
     retain_days: 7
     zones: []
   - id: cam2
@@ -28,8 +32,11 @@ cameras:
     fps_target: 10
     width: 640
     height: 480
+    detect_width: 320
+    detect_height: 240
+    detect_fps: 5
     min_contour_area: 1500
-    motion_threshold: 0.7
+    motion_threshold: 0.005  # 0.5% of frame — filters noise, passes real motion
     retain_days: 7
     zones: []
 
