@@ -102,6 +102,12 @@ def motion_process(
             packet: FramePacket = in_queue.get(timeout=1.0)
         except Exception:
             continue
+        # Drain queue — always process the LATEST frame to avoid delay build-up
+        while not in_queue.empty():
+            try:
+                packet = in_queue.get_nowait()
+            except Exception:
+                break
 
         total_frames += 1
         now = time.time()

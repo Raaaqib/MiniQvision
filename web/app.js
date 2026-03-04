@@ -280,6 +280,26 @@ function updatePills(apiOk, cameras) {
   }
 }
 
+// ── Per-camera snapshot pollers ─────────────────────────────────────────────
+const _camPollers = {}; // camId → intervalId
+
+function startPoller(camId, imgEl) {
+  if (_camPollers[camId]) return; // already running
+  _camPollers[camId] = setInterval(() => {
+    const url = `${Config.apiBase}/cameras/${encodeURIComponent(camId)}/snapshot.jpg?t=${Date.now()}`;
+    const tmp = new Image();
+    tmp.onload = () => { imgEl.src = tmp.src; };
+    tmp.src = url;
+  }, 100);
+}
+
+function stopPoller(camId) {
+  if (_camPollers[camId]) {
+    clearInterval(_camPollers[camId]);
+    delete _camPollers[camId];
+  }
+}
+
 // ── Camera Grid (Live View) ───────────────────────────────────────────────────
 
 function getOrCreateTile(camId) {
@@ -353,19 +373,11 @@ function updateCameraTile(camId, cam) {
   const errMsg  = tile.querySelector('[data-err-msg]');
 
   if (online) {
-    // Show live MJPEG stream
-    const streamUrl = `${Config.apiBase}/cameras/${encodeURIComponent(camId)}/stream`;
-    if (imgEl.src !== streamUrl) {
-      imgEl.src = streamUrl;
-    }
     imgEl.style.display = 'block';
     noSig.style.display = 'none';
-    imgEl.onerror = () => {
-      imgEl.style.display = 'none';
-      noSig.style.display = 'flex';
-      errMsg.textContent = 'STREAM ERROR';
-    };
+    startPoller(camId, imgEl);
   } else {
+    stopPoller(camId);
     noSig.style.display = 'flex';
     imgEl.style.display = 'none';
     errMsg.textContent = cam.error || 'CONNECTION FAILED';

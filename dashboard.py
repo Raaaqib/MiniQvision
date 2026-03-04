@@ -315,18 +315,14 @@ def main():
                             <small>{cam.get('error', 'Connecting...')}</small>
                         </div>""", unsafe_allow_html=True)
                     else:
-                        # Show latest snapshot as live proxy
-                        snaps = api_get(f"/snapshots?camera_id={cam_id}")
-                        if snaps:
-                            latest = snaps[0]["filename"]
-                            img_data = requests.get(f"{API_BASE}/snapshots/{latest}", timeout=2)
-                            if img_data.status_code == 200:
-                                st.image(img_data.content, use_container_width=True)
-                        else:
-                            st.markdown("""
-                            <div class="no-signal" style="padding:30px">
-                                Waiting for detections...
-                            </div>""", unsafe_allow_html=True)
+                        # Embed MJPEG stream directly — live feed from capture process
+                        stream_url = f"http://localhost:8000/api/cameras/{cam_id}/stream"
+                        st.markdown(
+                            f'<img src="{stream_url}" '
+                            f'style="width:100%;border-radius:0 0 4px 4px" '
+                            f'alt="{cam_id} live feed">',
+                            unsafe_allow_html=True
+                        )
 
                     st.markdown(f"""
                     <div style="background:#0c1020;border:1px solid #1a2540;

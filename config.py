@@ -143,7 +143,7 @@ def load_config(path: str = "config.yaml") -> RaaqibConfig:
     if not cfg_path.exists():
         raise FileNotFoundError(f"Config not found: {path}")
 
-    with open(cfg_path) as f:
+    with open(cfg_path, encoding="utf-8") as f:
         raw = yaml.safe_load(f)
 
     config = RaaqibConfig()

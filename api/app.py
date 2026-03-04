@@ -43,7 +43,7 @@ def create_app(state_dict: dict, db_path: str, config) -> FastAPI:
     def get_status():
         cameras_state = {
             k: v for k, v in state_dict.items()
-            if k not in ("events", "active_events")
+            if k not in ("events", "active_events") and ":" not in k
         }
         return {
             "status": "running",
@@ -62,7 +62,7 @@ def create_app(state_dict: dict, db_path: str, config) -> FastAPI:
     def list_cameras():
         return {
             k: v for k, v in state_dict.items()
-            if k not in ("events", "active_events")
+            if k not in ("events", "active_events") and ":" not in k
         }
 
     @app.get("/api/cameras/{camera_id}")
@@ -76,45 +76,38 @@ def create_app(state_dict: dict, db_path: str, config) -> FastAPI:
 
     @app.get("/api/cameras/{camera_id}/stream")
     def stream_camera(camera_id: str):
-        cam_cfg = next((c for c in config.enabled_cameras if c.id == camera_id), None)
-        if cam_cfg is None:
+        if camera_id not in [c.id for c in config.enabled_cameras]:
             raise HTTPException(404, f"Camera {camera_id} not found")
 
         def generate():
             import numpy as np
-            # A small dark "NO SIGNAL" placeholder frame (1×1 black JPEG)
             blank = np.zeros((480, 640, 3), dtype=np.uint8)
-            cv2.putText(blank, "NO SIGNAL", (200, 250),
+            cv2.putText(blank, "NO SIGNAL", (170, 250),
                         cv2.FONT_HERSHEY_SIMPLEX, 1.5, (80, 80, 80), 2)
             _, blank_jpeg = cv2.imencode('.jpg', blank)
             blank_bytes = blank_jpeg.tobytes()
 
-            cap = None
+            jpeg_key = f"{camera_id}:jpeg"
             while True:
-                # (Re)open capture if needed
-                if cap is None or not cap.isOpened():
-                    if cap is not None:
-                        cap.release()
-                    cap = cv2.VideoCapture(cam_cfg.source)
-                    cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-
-                ok, frame = cap.read()
-                if ok:
-                    _, jpeg = cv2.imencode('.jpg', frame,
-                                          [cv2.IMWRITE_JPEG_QUALITY, 70])
-                    payload = jpeg.tobytes()
-                else:
-                    # Source not ready — send placeholder and retry in 1s
-                    payload = blank_bytes
-                    time.sleep(1)
-
+                payload = state_dict.get(jpeg_key) or blank_bytes
                 yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n'
                        + payload + b'\r\n')
+                time.sleep(0.05)  # ~20 fps
 
         return StreamingResponse(
             generate(),
             media_type='multipart/x-mixed-replace; boundary=frame'
         )
+
+    @app.get("/api/cameras/{camera_id}/snapshot.jpg")
+    def latest_snapshot(camera_id: str):
+        """Return the latest frame as a single JPEG (for polling)."""
+        from fastapi.responses import Response
+        jpeg_key = f"{camera_id}:jpeg"
+        data = state_dict.get(jpeg_key)
+        if data is None:
+            raise HTTPException(404, "No frame available yet")
+        return Response(content=data, media_type="image/jpeg")
 
     # ── Events ────────────────────────────────────────────────────────────────
 

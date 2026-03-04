@@ -139,6 +139,26 @@ def tracking_process(
         tracked = tracker.update(packet.detections)
         packet.tracked_objects = tracked
 
+        # Write cached bounding boxes for live-view overlay (capture reads these)
+        # Only include objects currently visible (disappeared == 0)
+        try:
+            bbox_key = f"{cam_id}:bboxes"
+            visible = [o for o in tracked if o.disappeared == 0]
+            state_dict[bbox_key] = {
+                "timestamp": time.time(),
+                "objects": [
+                    {
+                        "label": o.label,
+                        "confidence": o.confidence,
+                        "bbox": o.bbox,
+                        "track_id": o.track_id,
+                    }
+                    for o in visible
+                ],
+            }
+        except Exception:
+            pass
+
         # Update camera state with active track count
         try:
             cam_state = state_dict.get(cam_id, {})

@@ -1,0 +1,100 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Raaqib NVR — Local Python Run Configuration (no Docker needed)
+# Run with: python app.py config_local.yaml
+# ─────────────────────────────────────────────────────────────────────────────
+
+log_level: INFO
+database: raaqib.db
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CAMERAS — using local webcam(s)
+# ═══════════════════════════════════════════════════════════════════════════════
+cameras:
+  - id: cam1
+    name: "HP TrueVision HD Camera"
+    source: "1"          # HP TrueVision HD Camera (index 1)
+    enabled: true
+    fps_target: 10
+    width: 640
+    height: 480
+    min_contour_area: 1500
+    motion_threshold: 0.7
+    retain_days: 7
+    zones: []
+  - id: cam2
+    name: "DroidCam"
+    source: "0"          # DroidCam Video (index 0)
+    enabled: true
+    fps_target: 10
+    width: 640
+    height: 480
+    min_contour_area: 1500
+    motion_threshold: 0.7
+    retain_days: 7
+    zones: []
+
+  # Add more webcams if available
+  # - id: cam2
+  #   name: "Webcam 1"
+  #   source: "1"
+  #   enabled: true
+  #   fps_target: 10
+  #   width: 640
+  #   height: 480
+  #   min_contour_area: 1500
+  #   motion_threshold: 0.5
+  #   retain_days: 7
+  #   zones: []
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DETECTION — YOLO ONNX model
+# ═══════════════════════════════════════════════════════════════════════════════
+detection:
+  model: "yolo11n.onnx"
+  confidence: 0.45
+  iou: 0.45
+  device: "cpu"
+  backend: "cpu"
+  pool_size: 1
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# RECORDING
+# ═══════════════════════════════════════════════════════════════════════════════
+recording:
+  enabled: true
+  output_dir: recordings
+  codec: libx264
+  crf: 23
+  fps: 10
+  pre_capture_s: 3
+  post_capture_s: 8
+  max_clip_s: 60
+  retain_days: 7
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SNAPSHOTS
+# ═══════════════════════════════════════════════════════════════════════════════
+snapshots:
+  enabled: true
+  output_dir: snapshots
+  jpeg_quality: 90
+  retain_days: 30
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MQTT (disabled for local run)
+# ═══════════════════════════════════════════════════════════════════════════════
+mqtt:
+  enabled: false
+  host: localhost
+  port: 1883
+  client_id: raaqib_nvr
+  tls: false
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# API
+# ═══════════════════════════════════════════════════════════════════════════════
+api:
+  host: "0.0.0.0"
+  port: 8000
+  cors_origins:
+    - "*"

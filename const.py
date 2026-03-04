@@ -30,7 +30,7 @@ DETECTION_POOL_SIZE     = 2         # number of detector workers
 MOG2_HISTORY            = 500
 MOG2_VAR_THRESHOLD      = 16
 MIN_CONTOUR_AREA        = 1500
-MOTION_COOLDOWN_S       = 2.0       # seconds between motion triggers
+MOTION_COOLDOWN_S       = 0.2       # seconds between motion triggers (~5 FPS detect rate)
 
 # ── Recording ─────────────────────────────────────────────
 DEFAULT_PRE_CAPTURE_S   = 3
@@ -41,8 +41,8 @@ DEFAULT_CRF             = 23
 DEFAULT_CODEC           = "libx264"
 
 # ── Tracking ──────────────────────────────────────────────
-TRACK_MAX_DISAPPEARED   = 30        # frames before object removed
-TRACK_MAX_DISTANCE      = 120       # pixels
+TRACK_MAX_DISAPPEARED   = 5         # frames before object removed (~1s at 5 FPS)
+TRACK_MAX_DISTANCE      = 80        # pixels — tighter matching avoids duplicates
 
 # ── Retention ─────────────────────────────────────────────
 DEFAULT_RETAIN_DAYS     = 7
