@@ -21,7 +21,7 @@ cameras:
   # start.bat streams your first detected webcam here automatically
   - id: cam1
     name: "Camera 1"
-    source: "rtsp://rtsp:8554/cam1"
+    source: 0
     enabled: true
     fps_target: 10
     width: 640
@@ -40,7 +40,7 @@ cameras:
   - id: cam2
     name: "Camera 2"
     source: "rtsp://rtsp:8554/cam2"
-    enabled: true
+    enabled: false
     fps_target: 10
     width: 640
     height: 480
@@ -56,7 +56,7 @@ cameras:
   - id: cam3
     name: "Camera 3"
     source: "rtsp://rtsp:8554/cam3"
-    enabled: true
+    enabled: false
     fps_target: 10
     width: 640
     height: 480
@@ -72,7 +72,7 @@ cameras:
   - id: cam4
     name: "Camera 4"
     source: "rtsp://rtsp:8554/cam4"
-    enabled: true
+    enabled: false
     fps_target: 10
     width: 640
     height: 480

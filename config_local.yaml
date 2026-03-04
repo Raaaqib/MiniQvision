@@ -25,6 +25,7 @@ cameras:
     motion_threshold: 0.005
     retain_days: 7
     zones: []
+
   - id: cam2
     name: "DroidCam"
     source: "0"          # DroidCam Video (index 0)
