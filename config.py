@@ -32,7 +32,7 @@ class CameraConfig:
     height: int = DEFAULT_HEIGHT
     # Motion
     min_contour_area: int = MIN_CONTOUR_AREA
-    motion_threshold: float = 0.5
+    motion_threshold: float = 0.02  # 2% of frame — filters noise, triggers ONNX on real motion
     # Zones (list of polygon dicts: [{name, points: [[x,y], ...]}, ...])
     zones: list = field(default_factory=list)
     # Retain

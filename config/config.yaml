@@ -27,7 +27,7 @@ cameras:
     width: 640
     height: 480
     min_contour_area: 1500
-    motion_threshold: 0.5
+    motion_threshold: 0.02  # 2% of frame — filters noise, triggers ONNX on real motion
     retain_days: 7
     zones: []
 
@@ -40,7 +40,7 @@ cameras:
     width: 640
     height: 480
     min_contour_area: 1500
-    motion_threshold: 0.5
+    motion_threshold: 0.02
     retain_days: 7
     zones: []
 
@@ -53,7 +53,7 @@ cameras:
     width: 640
     height: 480
     min_contour_area: 1500
-    motion_threshold: 0.5
+    motion_threshold: 0.02
     retain_days: 7
     zones: []
 
@@ -66,7 +66,7 @@ cameras:
     width: 640
     height: 480
     min_contour_area: 1500
-    motion_threshold: 0.5
+    motion_threshold: 0.02
     retain_days: 7
     zones: []
 
