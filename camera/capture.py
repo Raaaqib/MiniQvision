@@ -4,6 +4,7 @@ Reads frames from RTSP/USB and pushes FramePackets into the motion queue.
 """
 
 from __future__ import annotations
+import os
 import cv2
 import time
 import logging
@@ -35,8 +36,13 @@ def capture_process(
       For RTSP cameras with detect_url set, a second FFmpeg process opens the
       sub-stream and its frames are used as detect_frame directly.
     """
-    logging.basicConfig(level=logging.INFO,
-                        format=f"[Capture:{config.id}] %(levelname)s %(message)s")
+    from log_utils import configure_logging
+    configure_logging(f"capture:{config.id}")
+
+    # Suppress OpenCV's C++ WARN/INFO lines (they go to stderr → red in PowerShell).
+    # Levels: 0=SILENT 1=FATAL 2=ERROR 3=WARN 4=INFO 5=DEBUG
+    # Setting 2 (ERROR) hides the noisy DSHOW/backend WARN messages.
+    os.environ["OPENCV_LOG_LEVEL"] = "ERROR"
 
     if config.dual_stream_enabled:
         logger.info(

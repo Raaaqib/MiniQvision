@@ -24,8 +24,8 @@ def mqtt_process(
     stop_event: mp.Event,
 ):
     """MQTT publisher process entry point."""
-    logging.basicConfig(level=logging.INFO,
-                        format="[MQTT] %(levelname)s %(message)s")
+    from log_utils import configure_logging
+    configure_logging("mqtt")
 
     if not config.enabled:
         logger.info("MQTT disabled in config — process idle")

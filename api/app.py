@@ -197,9 +197,8 @@ def create_app(state_dict: dict, db_path: str, config) -> FastAPI:
 def run_api(config, state_dict: dict, stop_event, db_path: str):
     """API server process entry point."""
     import uvicorn
-    import logging as _logging
-    _logging.basicConfig(level=logging.INFO,
-                         format="[API] %(levelname)s %(message)s")
+    from log_utils import configure_logging
+    configure_logging("api")
 
     app = create_app(state_dict, db_path, config)
     uvicorn.run(

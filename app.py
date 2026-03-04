@@ -31,11 +31,8 @@ logger = logging.getLogger("raaqib")
 
 
 def setup_logging(level: str):
-    logging.basicConfig(
-        level=getattr(logging, level.upper(), logging.INFO),
-        format="%(asctime)s [%(name)s] %(levelname)s %(message)s",
-        datefmt="%H:%M:%S",
-    )
+    from log_utils import configure_logging
+    configure_logging("main", level)
 
 
 def main():

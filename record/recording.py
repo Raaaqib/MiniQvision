@@ -133,8 +133,8 @@ def recording_process(
     stop_event: mp.Event,
 ):
     """Recording process entry point."""
-    logging.basicConfig(level=logging.INFO,
-                        format="[Recorder] %(levelname)s %(message)s")
+    from log_utils import configure_logging
+    configure_logging("recorder")
 
     if not rec_config.enabled:
         logger.info("Recording disabled in config")

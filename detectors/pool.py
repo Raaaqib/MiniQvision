@@ -51,8 +51,8 @@ def detection_worker(
     Single detection worker process.
     Multiple workers can run in parallel (pool_size in config).
     """
-    logging.basicConfig(level=logging.INFO,
-                        format=f"[Detector:{worker_id}] %(levelname)s %(message)s")
+    from log_utils import configure_logging
+    configure_logging(f"detector:{worker_id}")
 
     detector = build_detector(det_config)
     if not detector.load():

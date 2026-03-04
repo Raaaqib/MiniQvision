@@ -61,8 +61,8 @@ def event_processor(
     Event processor entry point.
     Reads events from queue, manages lifecycle, writes to DB, publishes MQTT.
     """
-    logging.basicConfig(level=logging.INFO,
-                        format="[Events] %(levelname)s %(message)s")
+    from log_utils import configure_logging
+    configure_logging("events")
 
     import uuid
     active_events: dict[str, Event] = {}  # key: f"{camera_id}:{label}"

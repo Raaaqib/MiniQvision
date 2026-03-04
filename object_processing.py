@@ -116,8 +116,8 @@ def tracking_process(
     stop_event: mp.Event,
 ):
     """Tracking process entry point — one tracker per camera, shared process."""
-    logging.basicConfig(level=logging.INFO,
-                        format="[Tracker] %(levelname)s %(message)s")
+    from log_utils import configure_logging
+    configure_logging("tracker")
 
     # Per-camera trackers
     trackers: dict[str, CentroidTracker] = {}

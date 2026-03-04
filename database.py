@@ -137,8 +137,8 @@ def database_process(
     stop_event: mp.Event,
 ):
     """Database writer process — consumes from db_queue and writes to SQLite."""
-    logging.basicConfig(level=logging.INFO,
-                        format="[Database] %(levelname)s %(message)s")
+    from log_utils import configure_logging
+    configure_logging("database")
 
     db = Database(db_path)
     logger.info("Database process started")

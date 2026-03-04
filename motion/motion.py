@@ -84,8 +84,8 @@ def motion_process(
     Forwards ALL packets to record_queue (for pre-buffer).
     Only forwards motion packets to detection_queue.
     """
-    logging.basicConfig(level=logging.INFO,
-                        format=f"[Motion:{config.id}] %(levelname)s %(message)s")
+    from log_utils import configure_logging
+    configure_logging(f"motion:{config.id}")
 
     detector = MOG2MotionDetector(
         min_contour_area=config.min_contour_area
