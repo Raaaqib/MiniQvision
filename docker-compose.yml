@@ -1,0 +1,90 @@
+# ─────────────────────────────────────────────
+# Raaqib NVR — Docker Compose
+# ─────────────────────────────────────────────
+# QUICK START: double-click START.bat
+# STOP:        double-click STOP.bat
+#
+# Web UI:       http://localhost:8000/ui
+# API Docs:     http://localhost:8000/docs
+# Dashboard:    http://localhost:8501
+# ─────────────────────────────────────────────
+
+services:
+  # ── RTSP Relay Server ──────────────────────────────────────────────────────
+  # Receives webcam stream from your PC and makes it available to Raaqib
+  rtsp:
+    image: bluenviron/mediamtx:latest
+    container_name: raaqib-rtsp
+    restart: unless-stopped
+    ports:
+      - "8554:8554"   # RTSP
+      - "1935:1935"   # RTMP
+      - "8888:8888"   # HLS
+      - "9997:9997"   # API
+    environment:
+      - MTX_PROTOCOLS=tcp
+      - MTX_API=yes
+      - MTX_APIADDRESS=:9997
+
+  raaqib:
+    build: .
+    container_name: raaqib-nvr
+    restart: unless-stopped
+    depends_on:
+      - rtsp
+    environment:
+      - ENABLE_DASHBOARD=true
+      # GPU support: set to "cuda" in config.yaml and uncomment deploy section below
+      # - NVIDIA_VISIBLE_DEVICES=all
+    ports:
+      - "8000:8000"   # API + Web UI
+      - "8501:8501"   # Streamlit Dashboard
+    volumes:
+      # ── Config (REQUIRED) — edit this file to set your cameras & model ──
+      - ./config:/config:ro
+
+      # ── Model weights — place your .pt model file here ──
+      - ./models:/models:ro
+
+      # ── Persistent data ──
+      - raaqib-recordings:/data/recordings
+      - raaqib-snapshots:/data/snapshots
+      - raaqib-db:/data/db
+
+    # ── Shared memory (needed for OpenCV / multiprocessing) ──
+    shm_size: "512m"
+
+    # ── Uncomment for USB camera access (Linux only) ──
+    # devices:
+    #   - /dev/video0:/dev/video0
+
+    # ── Uncomment for NVIDIA GPU support ──
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+    # ── Uncomment to connect to an external MQTT broker ──
+    # depends_on:
+    #   - mqtt
+
+  # ── Optional: MQTT Broker ──────────────────────────────────────────────────
+  # mqtt:
+  #   image: eclipse-mosquitto:2
+  #   container_name: raaqib-mqtt
+  #   restart: unless-stopped
+  #   ports:
+  #     - "1883:1883"
+  #   volumes:
+  #     - mqtt-data:/mosquitto/data
+  #     - mqtt-log:/mosquitto/log
+
+volumes:
+  raaqib-recordings:
+  raaqib-snapshots:
+  raaqib-db:
+  # mqtt-data:
+  # mqtt-log:
