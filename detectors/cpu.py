@@ -99,7 +99,10 @@ class CPUDetector(BaseDetector):
                 return False
 
             opts = ort.SessionOptions()
-            opts.intra_op_num_threads = 4
+            opts.intra_op_num_threads = 4          # parallelism within a single op (e.g. matmul)
+            opts.inter_op_num_threads = 1          # YOLO is a sequential graph — no benefit from >1
+            opts.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
+            opts.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
             with self._lock:
                 self._session = ort.InferenceSession(
                     str(model_path), sess_options=opts,
