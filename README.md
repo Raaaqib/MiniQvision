@@ -73,37 +73,70 @@
 - **Python 3.10+** - [Download](https://www.python.org/downloads/)
 - **FFmpeg** - [Download](https://ffmpeg.org/download.html) (ensure in PATH)
 
-### Windows (PowerShell)
+### Installation Steps (Cross-Platform)
 
-\\\powershell
+#### 1. Create Virtual Environment
+
+**Windows (PowerShell):**
+```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip setuptools wheel
-pip install -r requirements.txt
-if (!(Test-Path models\yolo11n.onnx)) {
-    Invoke-WebRequest -Uri "https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11n.onnx" -OutFile "models\yolo11n.onnx"
-}
-python app.py config_local.yaml
-\\\
+```
 
-### macOS / Linux
-
-\\\ash
+**macOS / Linux (Bash/Zsh):**
+```bash
 python3 -m venv .venv
 source .venv/bin/activate
+```
+
+#### 2. Upgrade pip and Install Dependencies
+
+```bash
 python -m pip install --upgrade pip setuptools wheel
 pip install -r requirements.txt
+```
+
+#### 3. Download YOLO Model
+
+**Windows (PowerShell):**
+```powershell
+if (!(Test-Path models)) { mkdir models }
+if (!(Test-Path models/yolo11n.onnx)) {
+    Invoke-WebRequest -Uri "https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11n.onnx" -OutFile "models/yolo11n.onnx"
+}
+```
+
+**macOS / Linux:**
+```bash
 mkdir -p models
-curl -L -o models/yolo11n.onnx "https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11n.onnx"
+if [ ! -f models/yolo11n.onnx ]; then
+    curl -L -o models/yolo11n.onnx "https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11n.onnx"
+fi
+```
+
+#### 4. Create Configuration File
+
+Copy the template and customize:
+```bash
+cp src/config/config.yaml config_local.yaml
+```
+
+Edit `config_local.yaml` with your camera settings (see [Configuration](#configuration) section below).
+
+#### 5. Start the Application
+
+```bash
 python app.py config_local.yaml
-\\\
+```
 
 ### Quick Run Script (Unix/macOS)
 
-\\\ash
+Alternatively, use the automated setup script:
+
+```bash
 chmod +x quickrun.sh
 ./quickrun.sh
-\\\
+```
 
 **Access the API**: http://localhost:8000/docs
 
@@ -150,38 +183,51 @@ Press **Ctrl+C** in the terminal. Graceful shutdown in ~5 seconds.
 
 ## Configuration
 
-Edit config_local.yaml:
+### Getting Started with Configuration
 
-```yaml
-# Cameras
-cameras:
-  - id: front_door
-    name: "Front Door"
-    source: "rtsp://admin:pass@192.168.1.100:554/stream"
-    enabled: true
-    fps_target: 10
-    width: 1280
-    height: 720
+1. **Copy the default template:**
+   ```bash
+   cp src/config/config.yaml config_local.yaml
+   ```
 
-# Detection
-detection:
-  model_path: "models/yolo11n.onnx"
-  confidence_threshold: 0.45
-  device: "cpu"  # cpu | cuda | mps
+2. **Edit `config_local.yaml` with your settings:**
 
-# Recording
-recording:
-  enabled: true
-  pre_capture_seconds: 3
-  post_capture_seconds: 8
-  max_clip_seconds: 60
+   ```yaml
+   # Cameras
+   cameras:
+     - id: front_door
+       name: "Front Door"
+       source: "rtsp://admin:pass@192.168.1.100:554/stream"
+       # or for USB webcam: "0" (device index)
+       enabled: true
+       fps_target: 10
+       width: 1280
+       height: 720
 
-# MQTT (optional)
-mqtt:
-  enabled: false
-  broker: "127.0.0.1"
-  port: 1883
-```
+   # Detection
+   detection:
+     model_path: "models/yolo11n.onnx"
+     confidence_threshold: 0.45
+     device: "cpu"  # Options: cpu | cuda | mps | tpu
+
+   # Recording
+   recording:
+     enabled: true
+     pre_capture_seconds: 3
+     post_capture_seconds: 8
+     max_clip_seconds: 60
+
+   # MQTT (optional)
+   mqtt:
+     enabled: false
+     broker: "127.0.0.1"
+     port: 1883
+   ```
+
+3. **Start with your config:**
+   ```bash
+   python app.py config_local.yaml
+   ```
 
 ---
 
@@ -206,9 +252,9 @@ Open: http://localhost:8000/docs
 ## Project Structure
 
 ```
-MiniQvision/
+Raaqib/
 ├── app.py                    # Entry point
-├── config_local.yaml         # Configuration
+├── config_local.yaml         # Configuration (create from template)
 ├── requirements.txt          # Dependencies
 ├── quickrun.sh              # Quick start script
 │
@@ -227,14 +273,15 @@ MiniQvision/
 │   ├── bin/                 # Utilities
 │   ├── web/                 # Dashboard
 │   └── config/              # Config templates
+│       └── config.yaml      # Default configuration template
 │
-├── models/                   # AI models
-│   └── yolo11n.onnx
-├── recordings/              # Video clips
-├── snapshots/               # Snapshots
-├── logs/                    # Logs
+├── models/                   # AI models (create if not exists)
+│   └── yolo11n.onnx        # YOLO 11 Nano model
+├── recordings/              # Video clips (auto-created)
+├── snapshots/               # Snapshots (auto-created)
+├── logs/                    # Logs (auto-created)
 │
-└── docs/                    # Documentation (root level)
+└── docs/                    # Documentation
     ├── DOCUMENTATION.md
     ├── API.md
     ├── ARCHITECTURE.md
