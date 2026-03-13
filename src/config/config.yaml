@@ -1,46 +1,35 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Raaqib NVR — Docker Configuration
-# ─────────────────────────────────────────────────────────────────────────────
-# HOW IT WORKS:
-#   start.bat auto-detects your Windows cameras and streams them to
-#   the RTSP relay as cam1, cam2, cam3, cam4.
-#   Each slot below will be LIVE if a camera was found for it.
-#   You do NOT need to edit this file for basic use — just run start.bat.
-# ─────────────────────────────────────────────────────────────────────────────
-# To add an IP/RTSP camera (no bat file needed), add it below with its URL.
+# Raaqib NVR — Local Python Run Configuration (no Docker needed)
+# Run with: python app.py config_local.yaml
 # ─────────────────────────────────────────────────────────────────────────────
 
 log_level: INFO
 database: raaqib.db
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# CAMERAS
+# CAMERAS — using local webcam(s)
 # ═══════════════════════════════════════════════════════════════════════════════
 cameras:
-  # ── Webcam slot 1 ────────────────────────────────────────────────────────────
-  # start.bat streams your first detected webcam here automatically
   - id: cam1
-    name: "Camera 1"
-    source: 0
+    name: "HP TrueVision HD Camera"
+    source: "1"          # HP TrueVision HD Camera (index 1)
     enabled: true
     fps_target: 10
     width: 640
     height: 480
-    # Dual-stream: detect at 320x240 (∼3x faster ONNX), record at 640x480
+    # Dual-stream: detect at half-res — ~3x faster ONNX, same accuracy for close-range
     detect_width: 320
     detect_height: 240
-    detect_fps: 5
-    # detect_url: "rtsp://rtsp:8554/cam1_sub"  # uncomment if camera has a sub-stream
+    detect_fps: 5          # only 5fps needed for AI — halves detection CPU load
     min_contour_area: 1500
-    motion_threshold: 0.02  # 2% of frame — filters noise, triggers ONNX on real motion
+    motion_threshold: 0.005
     retain_days: 7
     zones: []
 
-  # ── Webcam slot 2 ────────────────────────────────────────────────────────────
   - id: cam2
-    name: "Camera 2"
-    source: "rtsp://rtsp:8554/cam2"
-    enabled: false
+    name: "DroidCam"
+    source: "0"          # DroidCam Video (index 0)
+    enabled: true
     fps_target: 10
     width: 640
     height: 480
@@ -48,72 +37,37 @@ cameras:
     detect_height: 240
     detect_fps: 5
     min_contour_area: 1500
-    motion_threshold: 0.02
+    motion_threshold: 0.005  # 0.5% of frame — filters noise, passes real motion
     retain_days: 7
     zones: []
 
-  # ── Webcam slot 3 ────────────────────────────────────────────────────────────
-  - id: cam3
-    name: "Camera 3"
-    source: "rtsp://rtsp:8554/cam3"
-    enabled: false
-    fps_target: 10
-    width: 640
-    height: 480
-    detect_width: 320
-    detect_height: 240
-    detect_fps: 5
-    min_contour_area: 1500
-    motion_threshold: 0.02
-    retain_days: 7
-    zones: []
-
-  # ── Webcam slot 4 ────────────────────────────────────────────────────────────
-  - id: cam4
-    name: "Camera 4"
-    source: "rtsp://rtsp:8554/cam4"
-    enabled: false
-    fps_target: 10
-    width: 640
-    height: 480
-    detect_width: 320
-    detect_height: 240
-    detect_fps: 5
-    min_contour_area: 1500
-    motion_threshold: 0.02
-    retain_days: 7
-    zones: []
-
-  # ── IP / RTSP Camera example (uncomment & fill in your details) ───────────────
-  # - id: front_door
-  #   name: "Front Door"
-  #   source: "rtsp://admin:password@192.168.1.100:554/stream1"
+  # Add more webcams if available
+  # - id: cam2
+  #   name: "Webcam 1"
+  #   source: "1"
   #   enabled: true
   #   fps_target: 10
-  #   width: 1280
-  #   height: 720
+  #   width: 640
+  #   height: 480
   #   min_contour_area: 1500
   #   motion_threshold: 0.5
   #   retain_days: 7
   #   zones: []
 
-
-# ═══════════════════════════════════════════════
-# DETECTION — YOLO model settings
-# ═══════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════
+# DETECTION — YOLO ONNX modelmodels/yolo11n.onnx
+# ═══════════════════════════════════════════════════════════════════════════════
 detection:
-  model: "yolo11n.onnx"        # ONNX model — place in the models/ folder
+  model: "models/yolo11n.onnx"
   confidence: 0.45
   iou: 0.45
-  device: "cpu"                # cpu | cuda (requires GPU + nvidia-docker)
-  backend: "cpu"               # cpu | edgetpu
-  pool_size: 2
-  # Uncomment to detect only specific objects:
-  # target_classes: [0, 2, 7]  # 0=person, 2=car, 7=truck
+  device: "cpu"
+  backend: "cpu"
+  pool_size: 1
 
-# ═══════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════
 # RECORDING
-# ═══════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════
 recording:
   enabled: true
   output_dir: recordings
@@ -125,30 +79,28 @@ recording:
   max_clip_s: 60
   retain_days: 7
 
-# ═══════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════
 # SNAPSHOTS
-# ═══════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════
 snapshots:
   enabled: true
   output_dir: snapshots
   jpeg_quality: 90
   retain_days: 30
 
-# ═══════════════════════════════════════════════
-# MQTT (optional — uncomment to enable)
-# ═══════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════
+# MQTT (disabled for local run)
+# ═══════════════════════════════════════════════════════════════════════════════
 mqtt:
   enabled: false
-  host: mqtt              # Use "mqtt" if using the mqtt service in docker-compose
+  host: localhost
   port: 1883
-  # username: user
-  # password: pass
   client_id: raaqib_nvr
   tls: false
 
-# ═══════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════
 # API
-# ═══════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════
 api:
   host: "0.0.0.0"
   port: 8000

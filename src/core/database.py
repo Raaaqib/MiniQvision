@@ -137,7 +137,7 @@ def database_process(
     stop_event: mp.Event,
 ):
     """Database writer process — consumes from db_queue and writes to SQLite."""
-    from log_utils import configure_logging
+    from src.core.log_utils import configure_logging
     configure_logging("database")
 
     db = Database(db_path)

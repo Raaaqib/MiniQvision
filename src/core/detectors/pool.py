@@ -10,9 +10,9 @@ import multiprocessing as mp
 from pathlib import Path
 import cv2
 
-from config import DetectionConfig, SnapshotConfig
-from camera.camera import FramePacket
-from detectors.base import BaseDetector
+from src.config import DetectionConfig, SnapshotConfig
+from src.core.camera.camera import FramePacket
+from src.core.detectors.base import BaseDetector
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 def build_detector(config: DetectionConfig) -> BaseDetector:
     """Factory: instantiate the correct detector backend."""
     if config.backend == "edgetpu":
-        from detectors.edgetpu import EdgeTPUDetector
+        from src.core.detectors.edgetpu import EdgeTPUDetector
         return EdgeTPUDetector(
             model_path=config.model,
             label_path="labels.txt",
@@ -28,7 +28,7 @@ def build_detector(config: DetectionConfig) -> BaseDetector:
             target_classes=config.target_classes,
         )
     else:
-        from detectors.cpu import CPUDetector
+        from src.core.detectors.cpu import CPUDetector
         return CPUDetector(
             model_name=config.model,
             confidence=config.confidence,
@@ -51,7 +51,7 @@ def detection_worker(
     Single detection worker process.
     Multiple workers can run in parallel (pool_size in config).
     """
-    from log_utils import configure_logging
+    from src.core.log_utils import configure_logging
     configure_logging(f"detector:{worker_id}")
 
     detector = build_detector(det_config)

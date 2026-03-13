@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import logging
 import multiprocessing as mp
-import os
 import signal
 import sys
 import threading
@@ -24,22 +23,8 @@ import time
 from collections.abc import Callable
 from typing import Any
 
-def _bootstrap_paths() -> None:
-    """Ensure local package roots are importable before project-local imports."""
-    project_root = os.path.dirname(os.path.abspath(__file__))
-    src_path = os.path.join(project_root, "src")
-    core_path = os.path.join(src_path, "core")
-
-    if src_path not in sys.path:
-        sys.path.insert(0, src_path)
-    if core_path not in sys.path:
-        sys.path.insert(0, core_path)
-
-
-_bootstrap_paths()
-
-from config import load_config
-from const import (
+from src.config import load_config
+from src.core.const import (
     DETECTION_QUEUE_SIZE,
     EVENT_QUEUE_SIZE,
     FRAME_QUEUE_SIZE,
@@ -54,7 +39,7 @@ MONITOR_INTERVAL_SECONDS = 5
 
 
 def setup_logging(level: str) -> None:
-    from log_utils import configure_logging
+    from src.core.log_utils import configure_logging
 
     configure_logging("main", level)
 
@@ -85,7 +70,7 @@ def _spawn_process(
 
 
 def _start_api_thread(config: Any, state_dict: Any, stop_event: mp.Event) -> threading.Thread:
-    from api.app import run_api
+    from src.api.app import run_api
 
     api_thread = threading.Thread(
         target=run_api,
@@ -127,7 +112,7 @@ def _graceful_shutdown(processes: list[mp.Process], storage: Any, manager: mp.Ma
 def main() -> None:
 
     # ── Load config ───────────────────────────────────────────────────────────
-    config_path = sys.argv[1] if len(sys.argv) > 1 else "config.yaml"
+    config_path = sys.argv[1] if len(sys.argv) > 1 else None
     config = load_config(config_path)
     setup_logging(config.log_level)
 
@@ -160,8 +145,8 @@ def main() -> None:
     processes = []
 
     # ── Spawn: Capture + Motion (per camera) ─────────────────────────────────
-    from camera.capture import capture_process
-    from motion.motion import motion_process
+    from src.core.camera.capture import capture_process
+    from src.core.motion.motion import motion_process
 
     for cam in config.enabled_cameras:
         _spawn_process(
@@ -181,7 +166,7 @@ def main() -> None:
         )
 
     # ── Spawn: Detection Workers (pool) ───────────────────────────────────────
-    from detectors.pool import detection_worker
+    from src.core.detectors.pool import detection_worker
 
     pool_size = config.detection.pool_size
     for i in range(pool_size):
@@ -198,7 +183,7 @@ def main() -> None:
         )
 
     # ── Spawn: Tracking ───────────────────────────────────────────────────────
-    from object_processing import tracking_process
+    from src.core.object_processing import tracking_process
 
     _spawn_process(
         processes,
@@ -211,7 +196,7 @@ def main() -> None:
     )
 
     # ── Spawn: Recording ──────────────────────────────────────────────────────
-    from record.recording import recording_process
+    from src.core.record.recording import recording_process
 
     _spawn_process(
         processes,
@@ -224,7 +209,7 @@ def main() -> None:
     )
 
     # ── Spawn: Event Processor ────────────────────────────────────────────────
-    from events.event_processor import event_processor
+    from src.core.events.event_processor import event_processor
 
     _spawn_process(
         processes,
@@ -237,7 +222,7 @@ def main() -> None:
     )
 
     # ── Spawn: Database Writer ────────────────────────────────────────────────
-    from database import database_process
+    from src.core.database import database_process
 
     _spawn_process(
         processes,
@@ -248,7 +233,7 @@ def main() -> None:
     )
 
     # ── Spawn: MQTT Publisher ─────────────────────────────────────────────────
-    from mqtt import mqtt_process
+    from src.core.mqtt import mqtt_process
 
     _spawn_process(
         processes,
@@ -262,7 +247,7 @@ def main() -> None:
     _start_api_thread(config, state_dict, stop_event)
 
     # ── Start: Storage Manager ────────────────────────────────────────────────
-    from storage import StorageManager
+    from src.core.storage import StorageManager
 
     storage = StorageManager(config.recording, config.snapshots)
     storage.start()
@@ -277,7 +262,7 @@ def main() -> None:
 
     # ── Monitor ───────────────────────────────────────────────────────────────
     logger.info("All processes started. Press Ctrl+C to stop.")
-    logger.info(f"Dashboard: streamlit run web/dashboard.py")
+    logger.info("Dashboard: streamlit run web/dashboard.py")
 
     try:
         _monitor_processes(processes, stop_event)

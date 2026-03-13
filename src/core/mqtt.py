@@ -9,8 +9,8 @@ import time
 import logging
 import multiprocessing as mp
 
-from config import MQTTConfig
-from const import (
+from src.config import MQTTConfig
+from src.core.const import (
     MQTT_TOPIC_DETECTION, MQTT_TOPIC_MOTION,
     MQTT_TOPIC_RECORDING, MQTT_TOPIC_STATUS
 )
@@ -24,7 +24,7 @@ def mqtt_process(
     stop_event: mp.Event,
 ):
     """MQTT publisher process entry point."""
-    from log_utils import configure_logging
+    from src.core.log_utils import configure_logging
     configure_logging("mqtt")
 
     if not config.enabled:

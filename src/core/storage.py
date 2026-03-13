@@ -9,7 +9,7 @@ import logging
 import threading
 from pathlib import Path
 
-from config import RecordingConfig, SnapshotConfig
+from src.config import RecordingConfig, SnapshotConfig
 
 logger = logging.getLogger(__name__)
 

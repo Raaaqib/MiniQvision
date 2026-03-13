@@ -11,9 +11,9 @@ import logging
 import multiprocessing as mp
 from typing import Optional
 
-from config import CameraConfig
-from camera.camera import FramePacket, CameraState
-from camera.ffmpeg import FFmpegReader
+from src.config import CameraConfig
+from src.core.camera.camera import FramePacket, CameraState
+from src.core.camera.ffmpeg import FFmpegReader
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ def capture_process(
       For RTSP cameras with detect_url set, a second FFmpeg process opens the
       sub-stream and its frames are used as detect_frame directly.
     """
-    from log_utils import configure_logging
+    from src.core.log_utils import configure_logging
     configure_logging(f"capture:{config.id}")
 
     # Suppress OpenCV's C++ WARN/INFO lines (they go to stderr → red in PowerShell).

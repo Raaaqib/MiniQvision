@@ -9,7 +9,7 @@ import numpy as np
 import logging
 import time
 from typing import Optional, Iterator
-from config import CameraConfig
+from src.config import CameraConfig
 
 logger = logging.getLogger(__name__)
 

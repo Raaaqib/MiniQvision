@@ -12,8 +12,8 @@ import numpy as np
 from collections import OrderedDict
 from scipy.spatial import distance as dist
 
-from camera.camera import FramePacket, TrackedObject, DetectionResult
-from const import TRACK_MAX_DISAPPEARED, TRACK_MAX_DISTANCE
+from src.core.camera.camera import FramePacket, TrackedObject, DetectionResult
+from src.core.const import TRACK_MAX_DISAPPEARED, TRACK_MAX_DISTANCE
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +116,7 @@ def tracking_process(
     stop_event: mp.Event,
 ):
     """Tracking process entry point — one tracker per camera, shared process."""
-    from log_utils import configure_logging
+    from src.core.log_utils import configure_logging
     configure_logging("tracker")
 
     # Per-camera trackers

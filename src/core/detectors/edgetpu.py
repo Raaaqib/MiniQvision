@@ -9,8 +9,8 @@ import numpy as np
 import logging
 import cv2
 
-from detectors.base import BaseDetector
-from camera.camera import DetectionResult
+from src.core.detectors.base import BaseDetector
+from src.core.camera.camera import DetectionResult
 
 logger = logging.getLogger(__name__)
 

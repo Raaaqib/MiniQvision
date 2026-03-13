@@ -8,7 +8,8 @@ import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
-from const import (
+
+from src.core.const import (
     DEFAULT_CONFIDENCE, DEFAULT_IOU, DEFAULT_MODEL,
     DEFAULT_PRE_CAPTURE_S, DEFAULT_POST_CAPTURE_S, DEFAULT_MAX_CLIP_S,
     DEFAULT_FPS, DEFAULT_CRF, DEFAULT_CODEC, DEFAULT_RETAIN_DAYS,
@@ -80,7 +81,7 @@ class CameraConfig:
         return self.effective_detect_width != self.width or self.effective_detect_height != self.height
 
     def validate(self):
-        assert self.id,    f"Camera missing id"
+        assert self.id, "Camera missing id"
         assert self.name,  f"Camera '{self.id}' missing name"
         assert self.source is not None, f"Camera '{self.id}' missing source"
 
@@ -168,11 +169,16 @@ class RaaqibConfig:
 
 # ── Parser ────────────────────────────────────────────────────────────────────
 
-def load_config(path: str = "config.yaml") -> RaaqibConfig:
+def load_config(path: str | Path | None = None) -> RaaqibConfig:
     """Load and validate config from YAML file."""
-    cfg_path = Path(path)
+    if path is None:
+        # Default: config/config.yaml relative to this file
+        cfg_path = Path(__file__).parent / "config" / "config.yaml"
+    else:
+        cfg_path = Path(path)
+
     if not cfg_path.exists():
-        raise FileNotFoundError(f"Config not found: {path}")
+        raise FileNotFoundError(f"Config not found: {cfg_path}")
 
     with open(cfg_path, encoding="utf-8") as f:
         raw = yaml.safe_load(f)

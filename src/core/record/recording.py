@@ -12,9 +12,9 @@ from collections import deque
 from pathlib import Path
 from datetime import datetime
 
-from camera.camera import FramePacket
-from camera.ffmpeg import FFmpegWriter
-from config import RecordingConfig
+from src.core.camera.camera import FramePacket
+from src.core.camera.ffmpeg import FFmpegWriter
+from src.config import RecordingConfig
 
 logger = logging.getLogger(__name__)
 
@@ -133,7 +133,7 @@ def recording_process(
     stop_event: mp.Event,
 ):
     """Recording process entry point."""
-    from log_utils import configure_logging
+    from src.core.log_utils import configure_logging
     configure_logging("recorder")
 
     if not rec_config.enabled:

@@ -5,7 +5,7 @@ Raaqib NVR — Abstract Detector Base Class
 from __future__ import annotations
 from abc import ABC, abstractmethod
 import numpy as np
-from camera.camera import DetectionResult
+from src.core.camera.camera import DetectionResult
 
 
 class BaseDetector(ABC):

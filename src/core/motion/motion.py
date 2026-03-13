@@ -11,9 +11,9 @@ import time
 import logging
 import multiprocessing as mp
 
-from config import CameraConfig
-from camera.camera import FramePacket
-from const import (
+from src.config import CameraConfig
+from src.core.camera.camera import FramePacket
+from src.core.const import (
     MOG2_HISTORY, MOG2_VAR_THRESHOLD, MIN_CONTOUR_AREA, MOTION_COOLDOWN_S
 )
 
@@ -84,7 +84,7 @@ def motion_process(
     Forwards ALL packets to record_queue (for pre-buffer).
     Only forwards motion packets to detection_queue.
     """
-    from log_utils import configure_logging
+    from src.core.log_utils import configure_logging
     configure_logging(f"motion:{config.id}")
 
     detector = MOG2MotionDetector(

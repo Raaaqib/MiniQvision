@@ -34,7 +34,7 @@ def create_app(state_dict: dict, db_path: str, config) -> FastAPI:
         allow_headers=["*"],
     )
 
-    from database import Database
+    from src.core.database import Database
     db = Database(db_path)
 
     # ── System ────────────────────────────────────────────────────────────────
@@ -197,7 +197,7 @@ def create_app(state_dict: dict, db_path: str, config) -> FastAPI:
 def run_api(config, state_dict: dict, stop_event, db_path: str):
     """API server process entry point."""
     import uvicorn
-    from log_utils import configure_logging
+    from src.core.log_utils import configure_logging
     configure_logging("api")
 
     app = create_app(state_dict, db_path, config)

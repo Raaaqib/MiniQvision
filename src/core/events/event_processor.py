@@ -61,7 +61,7 @@ def event_processor(
     Event processor entry point.
     Reads events from queue, manages lifecycle, writes to DB, publishes MQTT.
     """
-    from log_utils import configure_logging
+    from src.core.log_utils import configure_logging
     configure_logging("events")
 
     import uuid
