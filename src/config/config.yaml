@@ -1,0 +1,156 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Raaqib NVR — Docker Configuration
+# ─────────────────────────────────────────────────────────────────────────────
+# HOW IT WORKS:
+#   start.bat auto-detects your Windows cameras and streams them to
+#   the RTSP relay as cam1, cam2, cam3, cam4.
+#   Each slot below will be LIVE if a camera was found for it.
+#   You do NOT need to edit this file for basic use — just run start.bat.
+# ─────────────────────────────────────────────────────────────────────────────
+# To add an IP/RTSP camera (no bat file needed), add it below with its URL.
+# ─────────────────────────────────────────────────────────────────────────────
+
+log_level: INFO
+database: raaqib.db
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CAMERAS
+# ═══════════════════════════════════════════════════════════════════════════════
+cameras:
+  # ── Webcam slot 1 ────────────────────────────────────────────────────────────
+  # start.bat streams your first detected webcam here automatically
+  - id: cam1
+    name: "Camera 1"
+    source: 0
+    enabled: true
+    fps_target: 10
+    width: 640
+    height: 480
+    # Dual-stream: detect at 320x240 (∼3x faster ONNX), record at 640x480
+    detect_width: 320
+    detect_height: 240
+    detect_fps: 5
+    # detect_url: "rtsp://rtsp:8554/cam1_sub"  # uncomment if camera has a sub-stream
+    min_contour_area: 1500
+    motion_threshold: 0.02  # 2% of frame — filters noise, triggers ONNX on real motion
+    retain_days: 7
+    zones: []
+
+  # ── Webcam slot 2 ────────────────────────────────────────────────────────────
+  - id: cam2
+    name: "Camera 2"
+    source: "rtsp://rtsp:8554/cam2"
+    enabled: false
+    fps_target: 10
+    width: 640
+    height: 480
+    detect_width: 320
+    detect_height: 240
+    detect_fps: 5
+    min_contour_area: 1500
+    motion_threshold: 0.02
+    retain_days: 7
+    zones: []
+
+  # ── Webcam slot 3 ────────────────────────────────────────────────────────────
+  - id: cam3
+    name: "Camera 3"
+    source: "rtsp://rtsp:8554/cam3"
+    enabled: false
+    fps_target: 10
+    width: 640
+    height: 480
+    detect_width: 320
+    detect_height: 240
+    detect_fps: 5
+    min_contour_area: 1500
+    motion_threshold: 0.02
+    retain_days: 7
+    zones: []
+
+  # ── Webcam slot 4 ────────────────────────────────────────────────────────────
+  - id: cam4
+    name: "Camera 4"
+    source: "rtsp://rtsp:8554/cam4"
+    enabled: false
+    fps_target: 10
+    width: 640
+    height: 480
+    detect_width: 320
+    detect_height: 240
+    detect_fps: 5
+    min_contour_area: 1500
+    motion_threshold: 0.02
+    retain_days: 7
+    zones: []
+
+  # ── IP / RTSP Camera example (uncomment & fill in your details) ───────────────
+  # - id: front_door
+  #   name: "Front Door"
+  #   source: "rtsp://admin:password@192.168.1.100:554/stream1"
+  #   enabled: true
+  #   fps_target: 10
+  #   width: 1280
+  #   height: 720
+  #   min_contour_area: 1500
+  #   motion_threshold: 0.5
+  #   retain_days: 7
+  #   zones: []
+
+
+# ═══════════════════════════════════════════════
+# DETECTION — YOLO model settings
+# ═══════════════════════════════════════════════
+detection:
+  model: "yolo11n.onnx"        # ONNX model — place in the models/ folder
+  confidence: 0.45
+  iou: 0.45
+  device: "cpu"                # cpu | cuda (requires GPU + nvidia-docker)
+  backend: "cpu"               # cpu | edgetpu
+  pool_size: 2
+  # Uncomment to detect only specific objects:
+  # target_classes: [0, 2, 7]  # 0=person, 2=car, 7=truck
+
+# ═══════════════════════════════════════════════
+# RECORDING
+# ═══════════════════════════════════════════════
+recording:
+  enabled: true
+  output_dir: recordings
+  codec: libx264
+  crf: 23
+  fps: 10
+  pre_capture_s: 3
+  post_capture_s: 8
+  max_clip_s: 60
+  retain_days: 7
+
+# ═══════════════════════════════════════════════
+# SNAPSHOTS
+# ═══════════════════════════════════════════════
+snapshots:
+  enabled: true
+  output_dir: snapshots
+  jpeg_quality: 90
+  retain_days: 30
+
+# ═══════════════════════════════════════════════
+# MQTT (optional — uncomment to enable)
+# ═══════════════════════════════════════════════
+mqtt:
+  enabled: false
+  host: mqtt              # Use "mqtt" if using the mqtt service in docker-compose
+  port: 1883
+  # username: user
+  # password: pass
+  client_id: raaqib_nvr
+  tls: false
+
+# ═══════════════════════════════════════════════
+# API
+# ═══════════════════════════════════════════════
+api:
+  host: "0.0.0.0"
+  port: 8000
+  cors_origins:
+    - "*"
