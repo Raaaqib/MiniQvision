@@ -187,9 +187,12 @@ def create_app(state_dict: dict, db_path: str, config) -> FastAPI:
 
     # ── Serve Web UI static files ─────────────────────────────────────────
     web_dir = Path(__file__).resolve().parent.parent / "web"
-    if web_dir.is_dir():
-        app.mount("/ui", StaticFiles(directory=str(web_dir), html=True), name="web-ui")
-        logger.info(f"Serving Web UI from {web_dir} at /ui")
+    dist_dir = web_dir / "dist"
+    serve_dir = dist_dir if dist_dir.is_dir() else web_dir
+    
+    if serve_dir.is_dir():
+        app.mount("/ui", StaticFiles(directory=str(serve_dir), html=True), name="web-ui")
+        logger.info(f"Serving Web UI from {serve_dir} at /ui")
 
     return app
 

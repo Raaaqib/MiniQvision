@@ -10,21 +10,6 @@ database: raaqib.db
 # CAMERAS — using local webcam(s)
 # ═══════════════════════════════════════════════════════════════════════════════
 cameras:
-  - id: cam1
-    name: "HP TrueVision HD Camera"
-    source: "1"          # HP TrueVision HD Camera (index 1)
-    enabled: true
-    fps_target: 10
-    width: 640
-    height: 480
-    # Dual-stream: detect at half-res — ~3x faster ONNX, same accuracy for close-range
-    detect_width: 320
-    detect_height: 240
-    detect_fps: 5          # only 5fps needed for AI — halves detection CPU load
-    min_contour_area: 1500
-    motion_threshold: 0.005
-    retain_days: 7
-    zones: []
 
   - id: cam2
     name: "DroidCam"
