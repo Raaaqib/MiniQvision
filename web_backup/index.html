@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RAAQIB NVR</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ── Topbar ─────────────────────────────────────────── -->
+  <header class="topbar">
+    <div class="topbar-logo">
+      <span class="logo-icon">⬡</span>
+      <div class="logo-text">
+        <span class="logo-name">RAAQIB</span>
+        <span class="logo-sub">NVR SYSTEM v1.0</span>
+      </div>
+    </div>
+
+    <div class="topbar-center">
+      <div class="system-clock">
+        <div class="clock-time" id="clock-time">00:00:00</div>
+        <div class="clock-date" id="clock-date">—</div>
+      </div>
+    </div>
+
+    <div class="topbar-right">
+      <div class="topbar-storage">
+        <span class="storage-label">STORAGE</span>
+        <div class="storage-bar">
+          <div class="storage-fill" id="storage-fill" style="width:34%"></div>
+        </div>
+        <span class="storage-val" id="storage-val">34%</span>
+      </div>
+
+      <div class="topbar-divider"></div>
+
+      <button class="armed-toggle" id="armed-toggle" data-armed="false">
+        <span class="armed-dot"></span>
+        <span class="armed-label" id="armed-label">DISARMED</span>
+      </button>
+
+      <div class="topbar-divider"></div>
+
+      <div class="cam-count">
+        <span class="cam-count-num" id="cam-online-count">0</span>
+        <span class="cam-count-label">ONLINE</span>
+      </div>
+
+      <div class="topbar-divider"></div>
+
+      <div class="api-status" id="pill-api">
+        <span class="api-dot" id="api-dot"></span>
+        <span class="api-label">API</span>
+      </div>
+
+      <!-- Hidden elements kept for JS compatibility -->
+      <div id="pill-mqtt" style="display:none"><span class="pill-dot"></span><span class="pill-label">MQTT</span></div>
+      <div id="pill-rec" style="display:none"><span class="pill-dot blink"></span><span class="pill-label">REC</span></div>
+      <div class="threat-level" style="display:none">
+        <span id="tb1" class="tbar"></span><span id="tb2" class="tbar"></span>
+        <span id="tb3" class="tbar"></span><span id="tb4" class="tbar"></span>
+        <span id="tb5" class="tbar"></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Layout ─────────────────────────────────────────── -->
+  <div class="layout">
+
+    <!-- ── Sidebar ──────────────────────────────────────── -->
+    <aside class="sidebar" id="sidebar">
+      <button class="sidebar-collapse" id="sidebar-toggle" title="Collapse sidebar">‹</button>
+
+      <nav class="sidebar-nav">
+        <button class="nav-btn active" data-view="live">
+          <span class="nav-icon">◈</span>
+          <span class="nav-label">LIVE VIEW</span>
+        </button>
+        <button class="nav-btn" data-view="events">
+          <span class="nav-icon">⚡</span>
+          <span class="nav-label">EVENTS</span>
+        </button>
+        <button class="nav-btn" data-view="recordings">
+          <span class="nav-icon">⏺</span>
+          <span class="nav-label">RECORDINGS</span>
+        </button>
+        <button class="nav-btn" data-view="snapshots">
+          <span class="nav-icon">▣</span>
+          <span class="nav-label">SNAPSHOTS</span>
+        </button>
+        <button class="nav-btn" data-view="settings">
+          <span class="nav-icon">⚙</span>
+          <span class="nav-label">SETTINGS</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-sep"></div>
+
+      <div class="sidebar-section">
+        <div class="section-label">CAMERAS</div>
+        <div id="camera-list" class="camera-list"></div>
+      </div>
+
+      <div class="sidebar-sep"></div>
+
+      <div class="sidebar-section">
+        <div class="section-label">SYSTEM STATS</div>
+        <div class="stat-grid">
+          <div class="stat-block">
+            <div class="stat-val" id="stat-events">—</div>
+            <div class="stat-key">EVENTS</div>
+          </div>
+          <div class="stat-block">
+            <div class="stat-val" id="stat-clips">—</div>
+            <div class="stat-key">CLIPS</div>
+          </div>
+          <div class="stat-block">
+            <div class="stat-val" id="stat-snaps">—</div>
+            <div class="stat-key">SNAPS</div>
+          </div>
+          <div class="stat-block">
+            <div class="stat-val" id="stat-tracks">—</div>
+            <div class="stat-key">TRACKS</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-sep"></div>
+
+      <div class="sidebar-section sidebar-section--grow">
+        <div class="section-label">ACTIVE DETECTIONS</div>
+        <div id="active-detections" class="active-list">
+          <div class="empty-state">NO ACTIVE DETECTIONS</div>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <span id="last-update">LAST UPDATE: —</span>
+      </div>
+    </aside>
+
+    <!-- ── Main Content ──────────────────────────────────── -->
+    <main class="content">
+
+      <!-- LIVE VIEW ──────────────────────────────────────── -->
+      <section class="view active" id="view-live">
+        <div class="view-header">
+          <h2 class="view-title">LIVE MONITOR</h2>
+          <div class="view-controls">
+            <div class="grid-toggle">
+              <button class="ctrl-btn" id="btn-grid-1" title="1 column">▣</button>
+              <button class="ctrl-btn active" id="btn-grid-2" title="2 columns">⊞</button>
+              <button class="ctrl-btn" id="btn-grid-3" title="3 columns">⊟</button>
+            </div>
+            <div class="ctrl-sep"></div>
+            <button class="ctrl-btn" id="btn-fullscreen" title="Fullscreen">⤢</button>
+          </div>
+        </div>
+        <div class="camera-grid" id="camera-grid"></div>
+      </section>
+
+      <!-- EVENTS ─────────────────────────────────────────── -->
+      <section class="view" id="view-events">
+        <div class="view-header">
+          <h2 class="view-title">DETECTION EVENTS</h2>
+          <div class="view-controls">
+            <input class="filter-input" id="filter-cam" type="text" placeholder="Camera ID..." />
+            <input class="filter-input" id="filter-label" type="text" placeholder="Label..." />
+            <button class="ctrl-btn active" id="btn-refresh-events">↻ REFRESH</button>
+          </div>
+        </div>
+        <div class="events-table-wrap">
+          <table class="events-table">
+            <thead>
+              <tr>
+                <th>TIME</th>
+                <th>CAMERA</th>
+                <th>OBJECT</th>
+                <th>CONFIDENCE</th>
+                <th>DURATION</th>
+                <th>STATUS</th>
+              </tr>
+            </thead>
+            <tbody id="events-tbody">
+              <tr><td colspan="6" class="table-empty">Loading events...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- RECORDINGS ─────────────────────────────────────── -->
+      <section class="view" id="view-recordings">
+        <div class="view-header">
+          <h2 class="view-title">RECORDINGS</h2>
+          <div class="view-controls">
+            <select class="filter-select" id="rec-cam-filter">
+              <option value="">All Cameras</option>
+            </select>
+          </div>
+        </div>
+        <div class="clips-grid" id="clips-grid"></div>
+      </section>
+
+      <!-- SNAPSHOTS ──────────────────────────────────────── -->
+      <section class="view" id="view-snapshots">
+        <div class="view-header">
+          <h2 class="view-title">SNAPSHOTS</h2>
+          <div class="view-controls">
+            <select class="filter-select" id="snap-cam-filter">
+              <option value="">All Cameras</option>
+            </select>
+          </div>
+        </div>
+        <div class="snapshots-grid" id="snapshots-grid"></div>
+      </section>
+
+      <!-- SETTINGS ───────────────────────────────────────── -->
+      <section class="view" id="view-settings">
+        <div class="view-header">
+          <h2 class="view-title">SYSTEM SETTINGS</h2>
+        </div>
+        <div class="settings-layout">
+          <div class="settings-group">
+            <div class="settings-group-title">API CONNECTION</div>
+            <div class="settings-row">
+              <label class="settings-label">API Base URL</label>
+              <input class="settings-input" id="cfg-api-url" type="text" value="http://localhost:8000/api" />
+            </div>
+            <div class="settings-row">
+              <label class="settings-label">Refresh Interval (s)</label>
+              <input class="settings-input" id="cfg-refresh" type="number" value="3" min="1" max="60" />
+            </div>
+            <button class="settings-btn" id="btn-save-settings">SAVE &amp; RECONNECT</button>
+          </div>
+          <div class="settings-group">
+            <div class="settings-group-title">DETECTION MODEL</div>
+            <div class="settings-row">
+              <label class="settings-label">Model</label>
+              <div class="settings-val" id="cfg-model">—</div>
+            </div>
+            <div class="settings-row">
+              <label class="settings-label">Device</label>
+              <div class="settings-val" id="cfg-device">—</div>
+            </div>
+            <div class="settings-row">
+              <label class="settings-label">Confidence</label>
+              <div class="settings-val" id="cfg-confidence">—</div>
+            </div>
+          </div>
+          <div class="settings-group">
+            <div class="settings-group-title">STORAGE</div>
+            <div class="settings-row">
+              <label class="settings-label">Recordings</label>
+              <div class="settings-val" id="cfg-rec-mb">—</div>
+            </div>
+            <div class="settings-row">
+              <label class="settings-label">Snapshots</label>
+              <div class="settings-val" id="cfg-snap-mb">—</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- ── Right Events Panel ────────────────────────────── -->
+    <aside class="events-panel" id="view-live-events">
+      <div class="events-panel-header">
+        <span class="events-panel-title">LIVE EVENTS</span>
+        <span class="events-panel-badge" id="events-badge">0</span>
+      </div>
+      <div class="events-panel-feed" id="events-panel-feed">
+        <div class="empty-state">AWAITING EVENTS</div>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- ── Timeline ───────────────────────────────────────── -->
+  <div class="timeline-bar" id="timeline-bar">
+    <div class="timeline-header">
+      <span class="timeline-title">TIMELINE — 24H</span>
+      <div class="timeline-marks">
+        <span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span>
+      </div>
+    </div>
+    <div class="timeline-tracks" id="timeline-tracks">
+      <!-- Rows populated by JS -->
+    </div>
+    <div class="timeline-playhead" id="timeline-playhead"></div>
+  </div>
+
+  <!-- ── Lightbox ────────────────────────────────────────── -->
+  <div class="lightbox" id="lightbox" aria-hidden="true">
+    <button class="lightbox-close" id="lightbox-close">✕</button>
+    <img class="lightbox-img" id="lightbox-img" src="" alt="" />
+    <div class="lightbox-caption" id="lightbox-caption"></div>
+  </div>
+
+  <!-- ── Toast ───────────────────────────────────────────── -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="app.js"></script>
+  <script>
+    // ── Sidebar collapse ──────────────────────────────────────────────────────
+    const sidebarEl = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    sidebarToggle?.addEventListener('click', () => {
+      const collapsed = sidebarEl.classList.toggle('collapsed');
+      sidebarToggle.textContent = collapsed ? '›' : '‹';
+    });
+
+    // ── Armed toggle ──────────────────────────────────────────────────────────
+    const armedToggle = document.getElementById('armed-toggle');
+    const armedLabel  = document.getElementById('armed-label');
+    armedToggle?.addEventListener('click', () => {
+      const armed = armedToggle.dataset.armed === 'true';
+      armedToggle.dataset.armed = String(!armed);
+      armedLabel.textContent = armed ? 'DISARMED' : 'ARMED';
+    });
+
+    // ── Timeline playhead ─────────────────────────────────────────────────────
+    function updatePlayhead() {
+      const now   = new Date();
+      const mins  = now.getHours() * 60 + now.getMinutes();
+      const pct   = (mins / 1440) * 100;
+      const ph    = document.getElementById('timeline-playhead');
+      if (ph) ph.style.left = pct + '%';
+    }
+    setInterval(updatePlayhead, 60000);
+    updatePlayhead();
+
+    // ── Timeline tracks (re-render when cameras update) ───────────────────────
+    function renderTimeline(cameras) {
+      const container = document.getElementById('timeline-tracks');
+      if (!container) return;
+      const ids = Object.keys(cameras);
+      if (!ids.length) { container.innerHTML = '<div class="timeline-empty">No cameras</div>'; return; }
+      container.innerHTML = ids.map(id => {
+        const cam = cameras[id];
+        const seg = cam.recording ? 'red' : cam.motion ? 'amber' : cam.online ? 'idle' : 'offline';
+        // Build a fake 24h segment row — real data would come from a timeline API
+        const now  = new Date();
+        const pct  = ((now.getHours() * 60 + now.getMinutes()) / 1440) * 100;
+        return `
+          <div class="tl-row">
+            <div class="tl-row-label">${id}</div>
+            <div class="tl-row-track">
+              <div class="tl-seg tl-seg--${seg}" style="left:0%;width:${pct}%" title="${id}: ${seg}"></div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    // ── Right panel live events feed ──────────────────────────────────────────
+    let _lastEventCount = 0;
+    function renderEventsPanelFeed(events) {
+      const feed  = document.getElementById('events-panel-feed');
+      const badge = document.getElementById('events-badge');
+      if (!feed) return;
+      if (!events?.length) {
+        feed.innerHTML = '<div class="empty-state">AWAITING EVENTS</div>';
+        badge.textContent = '0';
+        return;
+      }
+      badge.textContent = events.length;
+
+      // Only re-render if count changed
+      if (events.length === _lastEventCount) return;
+      _lastEventCount = events.length;
+
+      const labelColor = { person:'blue', car:'green', vehicle:'green', animal:'orange', default:'blue' };
+      feed.innerHTML = events.slice(0, 30).map((ev, i) => {
+        const label = (ev.label || 'unknown').toLowerCase();
+        const color = labelColor[label] || labelColor.default;
+        const conf  = ((ev.confidence || ev.peak_confidence || 0) * 100).toFixed(0);
+        const snap  = `http://localhost:8000/api/snapshots?camera_id=${encodeURIComponent(ev.camera_id || '')}&limit=1`;
+        return `
+          <div class="ep-card ep-card--${color}${i===0?' ep-card--new':''}">
+            <div class="ep-thumb">
+              <span class="ep-thumb-icon">${label === 'person' ? '👤' : label === 'car' || label === 'vehicle' ? '🚗' : '◉'}</span>
+            </div>
+            <div class="ep-body">
+              <div class="ep-label">${(ev.label || 'UNKNOWN').toUpperCase()}</div>
+              <div class="ep-cam">${ev.camera_id || '—'}</div>
+              <div class="ep-conf">
+                <div class="ep-conf-bar"><div class="ep-conf-fill" style="width:${conf}%"></div></div>
+                <span class="ep-conf-val">${conf}%</span>
+              </div>
+              <div class="ep-ts">${fmtTime(ev.start_time)}</div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    // ── Hook into poll cycle ───────────────────────────────────────────────────
+    const _origPoll = window.poll;
+    // Patch renderCameraGrid to also update timeline & right panel
+    const _origRenderCameraGrid = window.renderCameraGrid;
+
+    // Intercept State updates by patching DOM.lastUpdate setter equivalent
+    // We use MutationObserver on last-update span to know when a poll completed
+    const lastUpEl = document.getElementById('last-update');
+    if (lastUpEl) {
+      new MutationObserver(() => {
+        if (window.State) {
+          renderTimeline(window.State.cameras || {});
+          renderEventsPanelFeed(window.State.activeEvents || []);
+        }
+      }).observe(lastUpEl, { childList: true, characterData: true, subtree: true });
+    }
+  </script>
+</body>
+</html>
