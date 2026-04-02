@@ -165,6 +165,38 @@ chmod +x quickrun.sh
 - **Apple Silicon**: Metal Performance Shaders
 - **Google Coral TPU**: ARM/Raspberry Pi support
 
+### Frontend Dashboard Prerequisites (React)
+
+Install **Node.js 20 LTS or newer** (recommended: latest 20.x LTS).
+
+- **Windows (PowerShell)**:
+  ```powershell
+  winget install OpenJS.NodeJS.LTS
+  ```
+- **macOS**:
+  ```bash
+  brew install node@20
+  ```
+- **Linux/macOS (nvm)**:
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+  nvm install 20
+  nvm use 20
+  ```
+
+Install pnpm using npm (npm is included with Node.js):
+
+```bash
+npm install -g pnpm
+```
+
+Install frontend dependencies:
+
+```bash
+cd src/web
+pnpm install
+```
+
 ---
 
 ## Running the System
@@ -174,6 +206,17 @@ chmod +x quickrun.sh
 ```bash
 python app.py config_local.yaml
 ```
+
+### Start React Dashboard (Development)
+
+In a second terminal:
+
+```bash
+cd src/web
+pnpm run dev
+```
+
+Frontend dev dashboard runs at: http://localhost:5173
 
 ### Stop
 

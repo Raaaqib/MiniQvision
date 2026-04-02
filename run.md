@@ -18,8 +18,19 @@ source .venv/bin/activate
 python app.py config_local.yaml
 ```
 
+### Start React Dashboard (dev server)
+
+In a second terminal:
+
+```bash
+cd src/web
+pnpm run dev
+```
+
+Frontend URL:
+- http://localhost:5173
+
 Open:
-- Web UI:   http://localhost:8000/ui
 - API docs: http://localhost:8000/docs
 - Status:   http://localhost:8000/api/status
 

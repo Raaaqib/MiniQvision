@@ -11,7 +11,7 @@ Prerequisites
 
 ```bash
 # from any OS
-git clone https://github.com/yourname/raaqib-nvr.git
+git clone https://github.com/Raaaqib/MiniQvision.git
 cd "raaqib-nvr/MiniQvision"
 pwd  # confirm project root contains app.py
 ```
@@ -57,6 +57,44 @@ pip install -r requirements.txt
 ```
 
 If installation fails on Windows because of build tools, install Microsoft C++ Build Tools.
+
+3.1) Install frontend tooling (Node.js + pnpm)
+
+Install **Node.js 20 LTS or newer** (recommended: latest 20.x LTS):
+
+Windows (PowerShell):
+
+```powershell
+winget install OpenJS.NodeJS.LTS
+```
+
+macOS:
+
+```bash
+brew install node@20
+```
+
+Linux/macOS with nvm:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+nvm install 20
+nvm use 20
+```
+
+Install pnpm via npm (npm is installed with Node.js):
+
+```bash
+npm install -g pnpm
+```
+
+Install the frontend dependencies:
+
+```bash
+cd src/web
+pnpm install
+cd ../..
+```
 
 4) Download the ONNX model into `models/` (required)
 
@@ -107,6 +145,15 @@ pkill -f "python app.py" || true
 source .venv/bin/activate
 python app.py config_local.yaml
 ```
+
+5.1) Run the React dashboard (second terminal)
+
+```bash
+cd src/web
+pnpm run dev
+```
+
+Frontend URL (dev server): http://localhost:5173
 
 Expected top-level log summary:
 
