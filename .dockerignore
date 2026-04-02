@@ -1,0 +1,47 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ── Virtual environment ───────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+
+# ── Git ───────────────────────────────────────────────────────────────────────
+.git/
+.gitignore
+.gitattributes
+
+# ── Runtime data (mounted as volumes) ────────────────────────────────────────
+recordings/
+snapshots/
+data/
+*.db
+
+# ── Models (mounted as volume) ────────────────────────────────────────────────
+models/
+
+# ── Local config (mounted read-only via compose) ──────────────────────────────
+config_local.yaml
+
+# ── Dev / tooling ─────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.code-workspace
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+*.log
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db

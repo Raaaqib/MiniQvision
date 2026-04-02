@@ -1,0 +1,74 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Raaqib NVR — Docker Compose
+#
+# Usage:
+#   docker compose up -d                  # NVR
+#   docker compose --profile mqtt up -d   # NVR + Mosquitto broker
+#
+# Before first run:
+#   1. Ensure config.docker.yaml exists and is configured for your environment
+#   2. Place your YOLO model at ./models/yolo11n.onnx
+#   3. (Linux only) Adjust the `devices:` section for your camera indices
+#   4. (Windows/macOS) Comment out the entire `devices:` block before startup
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── Main NVR application ────────────────────────────────────────────────────
+  nvr:
+    build: .
+    container_name: raaqib_nvr
+    restart: unless-stopped
+    ports:
+      - "8000:8000"           # FastAPI REST + MJPEG + Web UI  →  http://localhost:8000/ui
+    volumes:
+      - ./config.docker.yaml:/opt/raaqib/config.yaml:ro   # required config (container fails fast if missing)
+      - ./models:/opt/raaqib/models                        # YOLO .onnx model(s)
+      - nvr_recordings:/opt/raaqib/recordings              # recorded MP4 clips
+      - nvr_snapshots:/opt/raaqib/snapshots                # JPEG snapshots
+      - nvr_data:/opt/raaqib/data                          # SQLite database
+    # ── USB camera device pass-through (Linux only) ──────────────────────────
+    # Required only on Linux hosts using USB cameras.
+    # On Windows/macOS, comment out this entire block (use RTSP sources instead).
+    # Add more entries if you have additional cameras.
+    devices:
+      - /dev/video0:/dev/video0
+      - /dev/video1:/dev/video1
+    # Shared memory size — needed for Python multiprocessing Manager()
+    shm_size: 256mb
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/status')"]
+      interval: 30s
+      timeout: 10s
+      start_period: 20s
+      retries: 3
+
+  # ── Mosquitto MQTT broker (opt-in via --profile mqtt) ───────────────────────
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: raaqib_mqtt
+    profiles:
+      - mqtt
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_log:/mosquitto/log
+
+# ── Named volumes ──────────────────────────────────────────────────────────────
+# Switch to bind mounts if you need direct host access, e.g.:
+#   nvr_recordings:
+#     driver: local
+#     driver_opts:
+#       type: none
+#       o: bind
+#       device: ./data/recordings
+volumes:
+  nvr_recordings:
+  nvr_snapshots:
+  nvr_data:
+  mosquitto_data:
+  mosquitto_log:

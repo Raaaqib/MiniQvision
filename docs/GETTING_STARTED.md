@@ -148,6 +148,27 @@ tail -f logs/raaqib.log
 - In the terminal where `python app.py` runs: press Ctrl+C
 - Or force-kill on Windows: `Stop-Process -Name python -Force`
 
+8) Run with Docker (optional)
+
+1. Edit `config.docker.yaml` for your deployment.
+2. On Windows/macOS, comment out the `devices:` block in `docker-compose.yml`.
+3. Ensure `models/yolo11n.onnx` exists.
+4. Build and start:
+
+```bash
+docker compose build
+docker compose up -d
+```
+
+The container now fails fast if `/opt/raaqib/config.yaml` is missing (mounted from `./config.docker.yaml`).
+
+Verify Docker status:
+
+```bash
+docker compose ps
+curl -s http://localhost:8000/api/status
+```
+
 Troubleshooting
 - "ONNX model not found": ensure `models/yolo11n.onnx` exists and restart the app.
 - PowerShell activation blocked: run `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser` then activate.

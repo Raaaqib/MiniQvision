@@ -262,7 +262,6 @@ def main() -> None:
 
     # ── Monitor ───────────────────────────────────────────────────────────────
     logger.info("All processes started. Press Ctrl+C to stop.")
-    logger.info("Dashboard: streamlit run web/dashboard.py")
 
     try:
         _monitor_processes(processes, stop_event)

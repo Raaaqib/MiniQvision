@@ -46,16 +46,8 @@ nohup python app.py "$CONFIG" > "$LOGFILE" 2>&1 &
 BACKEND_PID=$!
 sleep 2
 
-# Optionally start Streamlit dashboard if present
-if [ -f web/dashboard.py ]; then
-  echo "Starting Streamlit dashboard"
-  nohup streamlit run web/dashboard.py > logs/dashboard.log 2>&1 &
-  DASH_PID=$!
-fi
-
 echo "Backend PID: $BACKEND_PID"
-[ -n "${DASH_PID-}" ] && echo "Dashboard PID: $DASH_PID"
 
 echo "Raaqib should be starting. Give it a few seconds, then open: http://localhost:8000/docs"
 
-echo "To stop: kill $BACKEND_PID (and dashboard PID if present) or use pkill -f 'python app.py'"
+echo "To stop: kill $BACKEND_PID or use pkill -f 'python app.py'"

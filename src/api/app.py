@@ -175,14 +175,11 @@ def create_app(state_dict: dict, db_path: str, config) -> FastAPI:
             raise HTTPException(404, "Snapshot not found")
         return FileResponse(str(path), media_type="image/jpeg")
 
-    # ── Static / Streamlit proxy hint ─────────────────────────────────────────
-
     @app.get("/")
     def root():
         return {
             "service": "Raaqib NVR",
             "api_docs": "/docs",
-            "dashboard": "http://localhost:8501",
         }
 
     # ── Serve Web UI static files ─────────────────────────────────────────

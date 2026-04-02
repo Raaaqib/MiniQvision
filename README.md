@@ -1,4 +1,4 @@
-﻿# ⬡ RAAQIB NVR
+# ⬡ RAAQIB NVR
 
 > A self-hosted AI-powered Network Video Recorder with intelligent two-stage detection
 

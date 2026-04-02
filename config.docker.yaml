@@ -1,0 +1,103 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Raaqib NVR — Docker Configuration Template
+# Mounted read-only at /opt/raaqib/config.yaml inside the container.
+#
+# Camera sources:
+#   USB (Linux, device mapped in compose):  source: "0"
+#   RTSP stream:                            source: "rtsp://user:pass@192.168.1.100:554/stream"
+# ─────────────────────────────────────────────────────────────────────────────
+
+log_level: INFO
+
+# SQLite database path (relative to WORKDIR /opt/raaqib, backed by nvr_data volume)
+database: data/raaqib.db
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CAMERAS
+# ═══════════════════════════════════════════════════════════════════════════════
+cameras:
+  - id: cam1
+    name: "Camera 1"
+    # USB webcam (Linux, device mapped): use numeric index
+    # RTSP IP camera: source: "rtsp://admin:password@192.168.1.100:554/h264Preview_01_main"
+    source: "0"
+    enabled: true
+    fps_target: 10
+    width: 640
+    height: 480
+    detect_width: 320
+    detect_height: 240
+    detect_fps: 5
+    min_contour_area: 1500
+    motion_threshold: 0.005
+    retain_days: 7
+    zones: []
+
+  # Uncomment to add a second camera
+  # - id: cam2
+  #   name: "Camera 2"
+  #   source: "rtsp://admin:password@192.168.1.101:554/stream"
+  #   enabled: true
+  #   fps_target: 10
+  #   width: 1280
+  #   height: 720
+  #   detect_width: 640
+  #   detect_height: 360
+  #   detect_fps: 5
+  #   min_contour_area: 1500
+  #   motion_threshold: 0.005
+  #   retain_days: 7
+  #   zones: []
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DETECTION — YOLO ONNX (mount your model to ./models/yolo11n.onnx)
+# ═══════════════════════════════════════════════════════════════════════════════
+detection:
+  model: "models/yolo11n.onnx"
+  confidence: 0.45
+  iou: 0.45
+  device: "cpu"
+  backend: "cpu"
+  pool_size: 1
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# RECORDING
+# ═══════════════════════════════════════════════════════════════════════════════
+recording:
+  enabled: true
+  output_dir: recordings
+  codec: libx264
+  crf: 23
+  fps: 10
+  pre_capture_s: 3
+  post_capture_s: 8
+  max_clip_s: 60
+  retain_days: 7
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SNAPSHOTS
+# ═══════════════════════════════════════════════════════════════════════════════
+snapshots:
+  enabled: true
+  output_dir: snapshots
+  jpeg_quality: 90
+  retain_days: 30
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MQTT — set enabled: true and run with --profile mqtt to start Mosquitto
+# ═══════════════════════════════════════════════════════════════════════════════
+mqtt:
+  enabled: false
+  host: mosquitto      # Docker service name — resolves inside compose network
+  port: 1883
+  client_id: raaqib_nvr
+  tls: false
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# API
+# ═══════════════════════════════════════════════════════════════════════════════
+api:
+  host: "0.0.0.0"
+  port: 8000
+  cors_origins:
+    - "*"
