@@ -39,7 +39,7 @@ Thank you for your interest in contributing to Raaqib! This document provides gu
 ### Clone Your Fork
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/raaqib-nvr.git
+git clone https://github.com/Raaaqib/MiniQvision.git
 cd raaqib-nvr/Raaqib-Docker
 ```
 
