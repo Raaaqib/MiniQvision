@@ -532,3 +532,27 @@ li {
     scroll-behavior: auto !important;
   }
 }
+
+@media print {
+  body {
+    background: var(--bg);
+  }
+  .slide {
+    page-break-inside: avoid;
+    margin-bottom: 40px;
+    box-shadow: none;
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+    min-height: auto;
+    page-break-after: always;
+  }
+  .topbar,
+  .sidebar,
+  .footer {
+    display: none !important;
+  }
+  .slides {
+    margin: 20px auto;
+    width: 100%;
+  }
+}
