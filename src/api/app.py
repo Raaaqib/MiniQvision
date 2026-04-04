@@ -182,6 +182,26 @@ def create_app(state_dict: dict, db_path: str, config) -> FastAPI:
             "api_docs": "/docs",
         }
 
+    # ── LPR Routes ────────────────────────────────────────────────────────────
+    if config.lpr.get("enabled", False):
+        try:
+            from src.core.lpr import LPRManager
+            from src.core.lpr.api_routes import build_lpr_router
+
+            lpr_manager = LPRManager(
+                config={"lpr": config.lpr},
+                db_path=db_path,
+                mqtt_client=None,
+            )
+            app.include_router(
+                build_lpr_router(lpr_manager),
+                prefix="/api/lpr",
+                tags=["LPR"],
+            )
+            logger.info("[LPR] API routes registered at /api/lpr")
+        except Exception as e:
+            logger.error(f"[LPR] Failed to register API routes: {e}")
+
     # ── Serve Web UI static files ─────────────────────────────────────────
     web_dir = Path(__file__).resolve().parent.parent / "web"
     if web_dir.is_dir():

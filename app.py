@@ -180,6 +180,8 @@ def main() -> None:
             tracking_queue,
             event_queue,
             stop_event,
+            config.lpr,        # LPR config dict
+            config.database,   # DB path for LPR
         )
 
     # ── Spawn: Tracking ───────────────────────────────────────────────────────

@@ -158,6 +158,7 @@ class RaaqibConfig:
     api: APIConfig = field(default_factory=APIConfig)
     database: str = DB_PATH
     log_level: str = "INFO"
+    lpr: dict = field(default_factory=dict)  # Raw LPR config dict for LPRManager
 
     def get_camera(self, camera_id: str) -> Optional[CameraConfig]:
         return next((c for c in self.cameras if c.id == camera_id), None)
@@ -263,6 +264,9 @@ def load_config(path: str | Path | None = None) -> RaaqibConfig:
         port=api.get("port", API_PORT),
         cors_origins=api.get("cors_origins", ["*"]),
     )
+
+    # LPR (store raw dict for LPRManager)
+    config.lpr = raw.get("lpr", {})
 
     logger.info(f"Config loaded: {len(config.cameras)} cameras, "
                 f"{len(config.enabled_cameras)} enabled")
