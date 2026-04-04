@@ -46,6 +46,8 @@ def detection_worker(
     tracking_queue: mp.Queue,    # sends annotated FramePackets to tracker
     event_queue: mp.Queue,       # sends detection events to event processor
     stop_event: mp.Event,
+    lpr_config: dict = None,     # LPR config dict (optional)
+    db_path: str = None,         # Database path for LPR
 ):
     """
     Single detection worker process.
@@ -58,6 +60,20 @@ def detection_worker(
     if not detector.load():
         logger.error("Detector failed to load — worker exiting")
         return
+
+    # Initialize LPR manager if config provided
+    lpr_manager = None
+    if lpr_config and lpr_config.get("enabled", False) and db_path:
+        try:
+            from src.core.lpr import LPRManager
+            lpr_manager = LPRManager(
+                config={"lpr": lpr_config},
+                db_path=db_path,
+                mqtt_client=None,  # MQTT handled separately in main process
+            )
+            logger.info(f"[LPR] Initialized in detection worker {worker_id}")
+        except Exception as e:
+            logger.error(f"[LPR] Failed to initialize: {e}")
 
     snap_dir = Path(snap_config.output_dir)
     snap_dir.mkdir(parents=True, exist_ok=True)
@@ -96,6 +112,13 @@ def detection_worker(
                     )
 
         packet.detections = detections
+
+        # LPR processing (after YOLO detections, uses full-res frame)
+        if lpr_manager and lpr_manager.enabled:
+            try:
+                lpr_manager.process(packet.camera_id, packet.frame, detections)
+            except Exception as e:
+                logger.error(f"[LPR] Processing error: {e}")
 
         if detections:
             detected += len(detections)

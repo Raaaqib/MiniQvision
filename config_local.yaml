@@ -106,3 +106,32 @@ api:
   port: 8000
   cors_origins:
     - "*"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# LPR (License Plate Recognition)
+# ═══════════════════════════════════════════════════════════════════════════════
+lpr:
+  enabled: false                     # Set to true to enable LPR
+  model: "models/yolo_lp.onnx"       # YOLO model for license plate detection
+  confidence: 0.50                   # Minimum confidence for plate detection
+  iou: 0.45                          # IoU threshold for NMS
+  ocr_lang: "en"                     # PaddleOCR language code
+  ocr_min_confidence: 0.60           # Minimum OCR confidence
+  snapshot_dir: "snapshots/lpr"      # Directory for LPR snapshots
+  cooldown_s: 10                     # Cooldown per plate per zone (seconds)
+
+  # Static whitelist (can also be managed via API)
+  whitelist: []
+    # - "ABC123"
+    # - "XYZ999"
+
+  # Per-camera LPR zones
+  cameras: []
+    # - camera_id: cam1
+    #   zones:
+    #     - id: entry_zone
+    #       polygon: [[100,200],[400,200],[400,400],[100,400]]
+    # - camera_id: cam2
+    #   zones:
+    #     - id: exit_zone
+    #       polygon: [[50,100],[300,100],[300,350],[50,350]]
