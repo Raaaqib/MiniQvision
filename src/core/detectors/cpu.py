@@ -4,10 +4,12 @@ Runs yolo11n.onnx (or any YOLOv8/11 ONNX) without PyTorch/Ultralytics.
 """
 
 from __future__ import annotations
+import ast
 import numpy as np
 import logging
 import threading
 from pathlib import Path
+from typing import Optional
 
 from src.core.detectors.base import BaseDetector
 from src.core.camera.camera import DetectionResult
@@ -74,13 +76,49 @@ class CPUDetector(BaseDetector):
     """YOLO ONNX inference on CPU using onnxruntime (no PyTorch needed)."""
 
     def __init__(self, model_name: str = "yolo11n.onnx", confidence: float = 0.45,
-                 iou: float = 0.45, device: str = "cpu", target_classes: list = None):
-        super().__init__(confidence, iou, target_classes)
+                 iou: float = 0.45, device: str = "cpu", target_classes: Optional[list] = None):
+        super().__init__(confidence, iou, target_classes or [])
         self.model_name = model_name
         self._session = None
         self._input_name = None
         self._input_shape = (640, 640)
+        self._class_names = COCO_NAMES
         self._lock = threading.Lock()
+
+    @staticmethod
+    def _parse_metadata_names(names_raw: str) -> list[str] | None:
+        """
+        Parse Ultralytics ONNX metadata names (dict/list string) into an ordered list.
+        Example: "{0: 'fire', 1: 'other', 2: 'smoke'}"
+        """
+        try:
+            parsed = ast.literal_eval(names_raw)
+        except Exception:
+            return None
+
+        if isinstance(parsed, (list, tuple)):
+            names = [str(v) for v in parsed]
+            return names if names else None
+
+        if isinstance(parsed, dict):
+            indexed: list[tuple[int, str]] = []
+            for k, v in parsed.items():
+                try:
+                    idx = int(k)
+                except Exception:
+                    continue
+                indexed.append((idx, str(v)))
+
+            if not indexed:
+                return None
+
+            max_idx = max(i for i, _ in indexed)
+            names = [str(i) for i in range(max_idx + 1)]
+            for i, label in indexed:
+                names[i] = label
+            return names
+
+        return None
 
     def load(self) -> bool:
         try:
@@ -104,14 +142,25 @@ class CPUDetector(BaseDetector):
             opts.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
             opts.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
             with self._lock:
-                self._session = ort.InferenceSession(
+                session = ort.InferenceSession(
                     str(model_path), sess_options=opts,
                     providers=["CPUExecutionProvider"],
                 )
-                self._input_name = self._session.get_inputs()[0].name
-                shape = self._session.get_inputs()[0].shape
+                self._session = session
+                self._input_name = session.get_inputs()[0].name
+                shape = session.get_inputs()[0].shape
                 if isinstance(shape[2], int):
                     self._input_shape = (shape[2], shape[3])
+
+                # Prefer label names embedded in ONNX metadata for custom-trained models.
+                self._class_names = COCO_NAMES
+                metadata = session.get_modelmeta().custom_metadata_map or {}
+                metadata_names = metadata.get("names")
+                if metadata_names:
+                    parsed_names = self._parse_metadata_names(metadata_names)
+                    if parsed_names:
+                        self._class_names = parsed_names
+                        logger.info("Loaded %s class labels from ONNX metadata", len(parsed_names))
                 self._loaded = True
 
             logger.info(f"ONNX detector ready: {model_path}")
@@ -164,7 +213,7 @@ class CPUDetector(BaseDetector):
             for idx in keep:
                 x1, y1, x2, y2 = boxes[idx]
                 cid = int(class_ids[idx])
-                label = COCO_NAMES[cid] if cid < len(COCO_NAMES) else str(cid)
+                label = self._class_names[cid] if cid < len(self._class_names) else str(cid)
                 results.append(DetectionResult(
                     camera_id=camera_id,
                     label=label,

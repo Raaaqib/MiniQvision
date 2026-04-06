@@ -20,10 +20,14 @@ import signal
 import sys
 import threading
 import time
+from importlib import import_module
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
-from src.config import load_config
+_config_module = import_module("src.config")
+load_config = _config_module.load_config
+validate_config = _config_module.validate_config
 from src.core.const import (
     DETECTION_QUEUE_SIZE,
     EVENT_QUEUE_SIZE,
@@ -69,7 +73,7 @@ def _spawn_process(
     return process
 
 
-def _start_api_thread(config: Any, state_dict: Any, stop_event: mp.Event) -> threading.Thread:
+def _start_api_thread(config: Any, state_dict: Any, stop_event: Any) -> threading.Thread:
     from src.api.app import run_api
 
     api_thread = threading.Thread(
@@ -83,7 +87,7 @@ def _start_api_thread(config: Any, state_dict: Any, stop_event: mp.Event) -> thr
     return api_thread
 
 
-def _monitor_processes(processes: list[mp.Process], stop_event: mp.Event) -> None:
+def _monitor_processes(processes: list[mp.Process], stop_event: Any) -> None:
     while not stop_event.is_set():
         for process in list(processes):
             if not process.is_alive() and not stop_event.is_set():
@@ -96,7 +100,7 @@ def _monitor_processes(processes: list[mp.Process], stop_event: mp.Event) -> Non
         time.sleep(MONITOR_INTERVAL_SECONDS)
 
 
-def _graceful_shutdown(processes: list[mp.Process], storage: Any, manager: mp.Manager) -> None:
+def _graceful_shutdown(processes: list[mp.Process], storage: Any, manager: Any) -> None:
     logger.info("Shutting down...")
     storage.stop()
 
@@ -116,12 +120,19 @@ def main() -> None:
     config = load_config(config_path)
     setup_logging(config.log_level)
 
+    # Pass config path for relative path resolution
+    config_path_obj = Path(config_path) if config_path else None
+    errors = validate_config(config, config_path_obj)
+    if errors:
+        for err in errors:
+            logger.error("Config error: %s", err)
+        raise SystemExit("Aborting: config validation failed. See errors above.")
+
     logger.info("=" * 60)
     logger.info("  RAAQIB NVR — Starting")
-    logger.info(f"  Cameras: {len(config.enabled_cameras)}")
-    logger.info(f"  Model:   {config.detection.model}")
-    logger.info(f"  Device:  {config.detection.device}")
-    logger.info(f"  API:     http://{config.api.host}:{config.api.port}")
+    logger.info("  Cameras: %s", len(config.enabled_cameras))
+    logger.info("  Models:  %s", len(config.models))
+    logger.info("  API:     http://%s:%s", config.api.host, config.api.port)
     logger.info("=" * 60)
 
     # ── Shared state & IPC ────────────────────────────────────────────────────
@@ -130,19 +141,54 @@ def main() -> None:
     stop_event = mp.Event()
 
     # Inter-process queues
-    detection_queue = mp.Queue(DETECTION_QUEUE_SIZE)
-    tracking_queue = mp.Queue(TRACKING_QUEUE_SIZE)
-    event_queue = mp.Queue(EVENT_QUEUE_SIZE)
-    mqtt_queue = mp.Queue(EVENT_QUEUE_SIZE)
-    db_queue = mp.Queue(EVENT_QUEUE_SIZE)
+    tracking_queue: mp.Queue = mp.Queue(TRACKING_QUEUE_SIZE)
+    event_queue: mp.Queue = mp.Queue(EVENT_QUEUE_SIZE)
+    mqtt_queue: mp.Queue = mp.Queue(EVENT_QUEUE_SIZE)
+    db_queue: mp.Queue = mp.Queue(EVENT_QUEUE_SIZE)
+
+    camera_model_map: dict[str, str] = {
+        cam.id: cam.model for cam in config.enabled_cameras
+    }
+
+    # One detection queue per unique model.
+    detection_queues: dict[str, mp.Queue] = {}
+    for model_id in set(camera_model_map.values()):
+        detection_queues[model_id] = mp.Queue(DETECTION_QUEUE_SIZE)
+
+    camera_zones: dict[str, list] = {
+        cam.id: cam.zones
+        for cam in config.enabled_cameras
+        if cam.zones
+    }
+
+    if camera_zones:
+        zone_summary = ", ".join(
+            f"{cam_id}: {len(zones)} zone(s)"
+            for cam_id, zones in camera_zones.items()
+        )
+        logger.info("Zone filtering active — %s", zone_summary)
+    else:
+        logger.info("No zones configured — zone filtering disabled")
+
+    logger.info("RAAQIB NVR — Model assignment")
+    for cam in config.enabled_cameras:
+        model_cfg = config.models[cam.model]
+        logger.info(
+            "  %-20s -> %-20s (%s, %s, %s worker(s))",
+            cam.id,
+            cam.model,
+            model_cfg.path,
+            model_cfg.device,
+            model_cfg.pool_size,
+        )
 
     # Per-camera queues (from capture->motion and motion->recording)
     motion_queues, record_queues = _build_per_camera_queues(config.enabled_cameras)
 
     # Shared record queue (from tracking → recorder)
-    post_detect_record_queue = mp.Queue(RECORD_QUEUE_SIZE)
+    post_detect_record_queue: mp.Queue = mp.Queue(RECORD_QUEUE_SIZE)
 
-    processes = []
+    processes: list[mp.Process] = []
 
     # ── Spawn: Capture + Motion (per camera) ─────────────────────────────────
     from src.core.camera.capture import capture_process
@@ -159,7 +205,8 @@ def main() -> None:
             motion_process, f"motion:{cam.id}",
             cam,
             motion_queues[cam.id],
-            detection_queue,
+            detection_queues,
+            camera_model_map,
             record_queues[cam.id],   # pre-detection frames for recorder
             state_dict,
             stop_event,
@@ -168,21 +215,24 @@ def main() -> None:
     # ── Spawn: Detection Workers (pool) ───────────────────────────────────────
     from src.core.detectors.pool import detection_worker
 
-    pool_size = config.detection.pool_size
-    for i in range(pool_size):
-        _spawn_process(
-            processes,
-            detection_worker, f"detector:{i}",
-            i,
-            config.detection,
-            config.snapshots,
-            detection_queue,
-            tracking_queue,
-            event_queue,
-            stop_event,
-            config.lpr,        # LPR config dict
-            config.database,   # DB path for LPR
-        )
+    for model_id in set(camera_model_map.values()):
+        model_cfg = config.models[model_id]
+        model_queue = detection_queues[model_id]
+        for i in range(model_cfg.pool_size):
+            _spawn_process(
+                processes,
+                detection_worker, f"detector:{model_id}:{i}",
+                i,
+                model_cfg,
+                config.snapshots,
+                model_queue,
+                tracking_queue,
+                event_queue,
+                stop_event,
+                config.lpr,
+                config.database,
+                camera_zones,
+            )
 
     # ── Spawn: Tracking ───────────────────────────────────────────────────────
     from src.core.object_processing import tracking_process

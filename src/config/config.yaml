@@ -13,6 +13,7 @@ cameras:
   - id: cam1
     name: "HP TrueVision HD Camera"
     source: "1"          # HP TrueVision HD Camera (index 1)
+    model: default
     enabled: true
     fps_target: 10
     width: 640
@@ -24,11 +25,11 @@ cameras:
     min_contour_area: 1500
     motion_threshold: 0.005
     retain_days: 7
-    zones: []
 
   - id: cam2
-    name: "DroidCam"
-    source: "0"          # DroidCam Video (index 0)
+    name: "DroidCam Video" 
+    source: "0"          # Integrated Webcam (index 0)
+    model: fire
     enabled: true
     fps_target: 10
     width: 640
@@ -37,33 +38,59 @@ cameras:
     detect_height: 240
     detect_fps: 5
     min_contour_area: 1500
-    motion_threshold: 0.005  # 0.5% of frame — filters noise, passes real motion
+    motion_threshold: 0.005
     retain_days: 7
+    
+
+    # Zone examples (bbox center-based filtering):
+    # - id: ignore_top_band
+    #   name: "Ignore top motion"
+    #   type: exclude
+    #   active: true
+    #   classes: []
+    #   polygon:
+    #     - [0, 0]
+    #     - [640, 0]
+    #     - [640, 120]
+    #     - [0, 120]
+    # - id: doorway
+    #   name: "Doorway trigger"
+    #   type: trigger
+    #   active: true
+    #   classes: ["person"]
+    #   polygon:
+    #     - [180, 180]
+    #     - [460, 180]
+    #     - [460, 470]
+    #     - [180, 470]
     zones: []
 
-  # Add more webcams if available
-  # - id: cam2
-  #   name: "Webcam 1"
-  #   source: "1"
-  #   enabled: true
-  #   fps_target: 10
-  #   width: 640
-  #   height: 480
-  #   min_contour_area: 1500
-  #   motion_threshold: 0.5
-  #   retain_days: 7
-  #   zones: []
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# DETECTION — YOLO ONNX modelmodels/yolo11n.onnx
+# MODELS — per-model definitions
 # ═══════════════════════════════════════════════════════════════════════════════
-detection:
-  model: "models/yolo11n.onnx"
-  confidence: 0.45
-  iou: 0.45
-  device: "cpu"
-  backend: "cpu"
-  pool_size: 1
+models:
+  default:
+    path: "models/yolo11n.onnx"
+    device: "cpu"
+    confidence_threshold: 0.45
+    pool_size: 1
+    classes: []
+  fire:
+    path: "models/yolov11.onnx"
+    device: "cpu"
+    confidence_threshold: 0.45
+    pool_size: 1
+    classes: ["fire", "smoke"]
+    
+
+  # Example variants (enable only when model files exist):
+  # lpr:
+  #   path: "models/lpr_yolo11n.onnx"
+  #   device: "cpu"
+  #   confidence_threshold: 0.60
+  #   pool_size: 1
+  #   classes: ["license_plate"]
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # RECORDING
@@ -106,3 +133,32 @@ api:
   port: 8000
   cors_origins:
     - "*"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# LPR (License Plate Recognition)
+# ═══════════════════════════════════════════════════════════════════════════════
+lpr:
+  enabled: false                     # Set to true to enable LPR
+  model: "models/yolo_lp.onnx"       # YOLO model for license plate detection
+  confidence: 0.50                   # Minimum confidence for plate detection
+  iou: 0.45                          # IoU threshold for NMS
+  ocr_lang: "en"                     # PaddleOCR language code
+  ocr_min_confidence: 0.60           # Minimum OCR confidence
+  snapshot_dir: "snapshots/lpr"      # Directory for LPR snapshots
+  cooldown_s: 10                     # Cooldown per plate per zone (seconds)
+
+  # Static whitelist (can also be managed via API)
+  whitelist: []
+    # - "ABC123"
+    # - "XYZ999"
+
+  # Per-camera LPR zones
+  cameras: []
+    # - camera_id: cam1
+    #   zones:
+    #     - id: entry_zone
+    #       polygon: [[100,200],[400,200],[400,400],[100,400]]
+    # - camera_id: cam2
+    #   zones:
+    #     - id: exit_zone
+    #       polygon: [[50,100],[300,100],[300,350],[50,350]]

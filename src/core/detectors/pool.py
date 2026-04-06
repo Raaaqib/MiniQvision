@@ -4,50 +4,59 @@ Pulls motion-flagged packets, runs YOLO, pushes to tracking queue.
 """
 
 from __future__ import annotations
-import time
 import logging
 import multiprocessing as mp
 from pathlib import Path
+from queue import Full
+from typing import Any
 import cv2
 
-from src.config import DetectionConfig, SnapshotConfig
 from src.core.camera.camera import FramePacket
 from src.core.detectors.base import BaseDetector
+from src.core.zones import filter_detections_by_zones
 
 logger = logging.getLogger(__name__)
 
 
-def build_detector(config: DetectionConfig) -> BaseDetector:
+def build_detector(config: Any) -> BaseDetector:
     """Factory: instantiate the correct detector backend."""
-    if config.backend == "edgetpu":
+    if config.device == "tpu":
         from src.core.detectors.edgetpu import EdgeTPUDetector
         return EdgeTPUDetector(
-            model_path=config.model,
+            model_path=config.path,
             label_path="labels.txt",
-            confidence=config.confidence,
-            target_classes=config.target_classes,
+            confidence=config.confidence_threshold,
+            target_classes=[],
         )
-    else:
-        from src.core.detectors.cpu import CPUDetector
-        return CPUDetector(
-            model_name=config.model,
-            confidence=config.confidence,
-            iou=config.iou,
-            device=config.device,
-            target_classes=config.target_classes,
-        )
+
+    from src.core.detectors.cpu import CPUDetector
+    return CPUDetector(
+        model_name=config.path,
+        confidence=config.confidence_threshold,
+        iou=0.45,
+        device=config.device,
+        target_classes=[],
+    )
+
+
+def _filter_by_model_classes(detections: list, model_cfg: Any) -> list:
+    """If model has a class whitelist, filter out anything not in it."""
+    if not model_cfg.classes:
+        return detections
+    return [d for d in detections if d.label in model_cfg.classes]
 
 
 def detection_worker(
     worker_id: int,
-    det_config: DetectionConfig,
-    snap_config: SnapshotConfig,
+    det_config: Any,
+    snap_config: Any,
     in_queue: mp.Queue,          # receives FramePackets with motion
     tracking_queue: mp.Queue,    # sends annotated FramePackets to tracker
     event_queue: mp.Queue,       # sends detection events to event processor
-    stop_event: mp.Event,
-    lpr_config: dict = None,     # LPR config dict (optional)
-    db_path: str = None,         # Database path for LPR
+    stop_event: Any,
+    lpr_config: dict | None = None,     # LPR config dict (optional)
+    db_path: str | None = None,         # Database path for LPR
+    camera_zones: dict | None = None,   # camera_id -> list[Zone]
 ):
     """
     Single detection worker process.
@@ -111,6 +120,27 @@ def detection_worker(
                         int(x2 * x_scale), int(y2 * y_scale),
                     )
 
+        # Coarse model-level class filter.
+        detections = _filter_by_model_classes(detections, det_config)
+
+        # Zone filtering is applied after bbox scaling so coordinates align with config polygons.
+        if camera_zones:
+            zones_for_cam = camera_zones.get(packet.camera_id, [])
+            if zones_for_cam:
+                before = len(detections)
+                detections = filter_detections_by_zones(
+                    detections,
+                    zones_for_cam,
+                    packet.camera_id,
+                )
+                if len(detections) < before:
+                    logger.debug(
+                        "[%s] Zones filtered %s/%s detections",
+                        packet.camera_id,
+                        before - len(detections),
+                        before,
+                    )
+
         packet.detections = detections
 
         # LPR processing (after YOLO detections, uses full-res frame)
@@ -138,14 +168,14 @@ def detection_worker(
                     "timestamp": packet.timestamp,
                     "detections": [d.to_dict() for d in detections],
                 })
-            except Exception:
-                pass
+            except Full:
+                logger.warning("Event queue full, dropping detection event for %s", packet.camera_id)
 
         # Forward to tracker regardless (even with no detections)
         try:
             tracking_queue.put_nowait(packet)
-        except Exception:
-            pass
+        except Full:
+            logger.warning("Tracking queue full, dropping packet for %s", packet.camera_id)
 
     logger.info(f"Worker {worker_id} stopped. "
                 f"Processed={processed}, Detected={detected}")

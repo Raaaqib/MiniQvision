@@ -21,5 +21,4 @@ onnxslim==0.1.86
 fastapi==0.135.1
 uvicorn[standard]==0.41.0
 # ── OCR ───────────────────────────────────────────────────────────────────────
-paddleocr>=2.7.0
-paddlepaddle>=2.6.0
+EasyOCR

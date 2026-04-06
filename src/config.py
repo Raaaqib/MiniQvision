@@ -20,6 +20,31 @@ from src.core.const import (
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class ZonePoint:
+    x: int
+    y: int
+
+
+@dataclass
+class Zone:
+    id: str
+    name: str
+    type: str
+    polygon: list[ZonePoint]
+    active: bool = True
+    classes: list[str] = field(default_factory=list)
+
+
+@dataclass
+class ModelConfig:
+    path: str
+    device: str = "cpu"
+    confidence_threshold: float = 0.45
+    pool_size: int = 2
+    classes: list[str] = field(default_factory=list)
+
+
 # ── Camera Config ─────────────────────────────────────────────────────────────
 
 @dataclass
@@ -34,8 +59,8 @@ class CameraConfig:
     # Motion
     min_contour_area: int = MIN_CONTOUR_AREA
     motion_threshold: float = 0.02  # 2% of frame — filters noise, triggers ONNX on real motion
-    # Zones (list of polygon dicts: [{name, points: [[x,y], ...]}, ...])
-    zones: list = field(default_factory=list)
+    model: str = "default"
+    zones: list[Zone] = field(default_factory=list)
     # Retain
     retain_days: int = DEFAULT_RETAIN_DAYS
     # ── Dual-stream (detect vs record) ───────────────────────────────────────
@@ -149,9 +174,10 @@ class APIConfig:
 # ── Root Config ───────────────────────────────────────────────────────────────
 
 @dataclass
-class RaaqibConfig:
+class AppConfig:
     cameras: list[CameraConfig] = field(default_factory=list)
     detection: DetectionConfig = field(default_factory=DetectionConfig)
+    models: dict[str, ModelConfig] = field(default_factory=dict)
     recording: RecordingConfig = field(default_factory=RecordingConfig)
     snapshots: SnapshotConfig = field(default_factory=SnapshotConfig)
     mqtt: MQTTConfig = field(default_factory=MQTTConfig)
@@ -168,9 +194,66 @@ class RaaqibConfig:
         return [c for c in self.cameras if c.enabled]
 
 
+RaaqibConfig = AppConfig
+
+
+def _parse_zones(raw_zones: list) -> list[Zone]:
+    zones: list[Zone] = []
+    for z in raw_zones or []:
+        zone_id = z.get("id")
+        if not zone_id:
+            logger.warning("Zone missing id, skipping")
+            continue
+
+        zone_type = z.get("type", "trigger")
+        if zone_type not in ("trigger", "exclude"):
+            logger.warning("Zone '%s' has unknown type '%s', skipping", zone_id, zone_type)
+            continue
+
+        raw_polygon = z.get("polygon", [])
+        if len(raw_polygon) < 3:
+            logger.warning("Zone '%s' has fewer than 3 polygon points, skipping", zone_id)
+            continue
+
+        polygon: list[ZonePoint] = []
+        polygon_valid = True
+        for p in raw_polygon:
+            if not isinstance(p, (list, tuple)) or len(p) < 2:
+                polygon_valid = False
+                break
+            try:
+                polygon.append(ZonePoint(x=int(p[0]), y=int(p[1])))
+            except (TypeError, ValueError):
+                polygon_valid = False
+                break
+
+        if not polygon_valid:
+            logger.warning("Zone '%s' has invalid polygon point(s), skipping", zone_id)
+            continue
+
+        classes = z.get("classes", [])
+        if classes is None:
+            classes = []
+        if not isinstance(classes, list):
+            classes = [str(classes)]
+
+        zones.append(
+            Zone(
+                id=zone_id,
+                name=z.get("name", zone_id),
+                type=zone_type,
+                polygon=polygon,
+                active=bool(z.get("active", True)),
+                classes=[str(c) for c in classes],
+            )
+        )
+
+    return zones
+
+
 # ── Parser ────────────────────────────────────────────────────────────────────
 
-def load_config(path: str | Path | None = None) -> RaaqibConfig:
+def load_config(path: str | Path | None = None) -> AppConfig:
     """Load and validate config from YAML file."""
     if path is None:
         # Default: config/config.yaml relative to this file
@@ -182,11 +265,69 @@ def load_config(path: str | Path | None = None) -> RaaqibConfig:
         raise FileNotFoundError(f"Config not found: {cfg_path}")
 
     with open(cfg_path, encoding="utf-8") as f:
-        raw = yaml.safe_load(f)
+        raw = yaml.safe_load(f) or {}
 
-    config = RaaqibConfig()
+    config = AppConfig()
     config.log_level = raw.get("log_level", "INFO")
     config.database  = raw.get("database", DB_PATH)
+
+    # Detection (legacy, kept for backward compatibility)
+    det = raw.get("detection", {})
+    config.detection = DetectionConfig(
+        model=det.get("model", det.get("model_path", DEFAULT_MODEL)),
+        confidence=det.get("confidence", det.get("confidence_threshold", DEFAULT_CONFIDENCE)),
+        iou=det.get("iou", DEFAULT_IOU),
+        device=det.get("device", "cpu"),
+        backend=det.get("backend", "cpu"),
+        pool_size=det.get("pool_size", 2),
+        target_classes=det.get("target_classes", None),
+    )
+
+    # Models (new). If absent, use legacy detection block as default model.
+    raw_models = raw.get("models")
+    if raw_models is None:
+        classes = config.detection.target_classes or []
+        config.models = {
+            "default": ModelConfig(
+                path=config.detection.model,
+                device=config.detection.device,
+                confidence_threshold=config.detection.confidence,
+                pool_size=config.detection.pool_size,
+                classes=[str(c) for c in classes],
+            )
+        }
+    else:
+        for model_id, model_raw in raw_models.items():
+            if not isinstance(model_raw, dict):
+                logger.warning("Model '%s' config is not a mapping, skipping", model_id)
+                continue
+
+            classes = model_raw.get("classes", [])
+            if classes is None:
+                classes = []
+            if not isinstance(classes, list):
+                classes = [str(classes)]
+
+            config.models[str(model_id)] = ModelConfig(
+                path=str(model_raw.get("path", model_raw.get("model", config.detection.model))),
+                device=str(model_raw.get("device", config.detection.device)),
+                confidence_threshold=float(
+                    model_raw.get("confidence_threshold", model_raw.get("confidence", config.detection.confidence))
+                ),
+                pool_size=int(model_raw.get("pool_size", config.detection.pool_size)),
+                classes=[str(c) for c in classes],
+            )
+
+        if not config.models:
+            config.models = {
+                "default": ModelConfig(
+                    path=config.detection.model,
+                    device=config.detection.device,
+                    confidence_threshold=config.detection.confidence,
+                    pool_size=config.detection.pool_size,
+                    classes=[str(c) for c in (config.detection.target_classes or [])],
+                )
+            }
 
     # Cameras
     for cam_raw in raw.get("cameras", []):
@@ -200,7 +341,8 @@ def load_config(path: str | Path | None = None) -> RaaqibConfig:
             height=cam_raw.get("height", DEFAULT_HEIGHT),
             min_contour_area=cam_raw.get("min_contour_area", MIN_CONTOUR_AREA),
             motion_threshold=cam_raw.get("motion_threshold", 0.02),
-            zones=cam_raw.get("zones", []),
+            model=cam_raw.get("model", "default"),
+            zones=_parse_zones(cam_raw.get("zones", [])),
             retain_days=cam_raw.get("retain_days", DEFAULT_RETAIN_DAYS),
             detect_width=cam_raw.get("detect_width", 0),
             detect_height=cam_raw.get("detect_height", 0),
@@ -209,18 +351,6 @@ def load_config(path: str | Path | None = None) -> RaaqibConfig:
         )
         cam.validate()
         config.cameras.append(cam)
-
-    # Detection
-    det = raw.get("detection", {})
-    config.detection = DetectionConfig(
-        model=det.get("model", DEFAULT_MODEL),
-        confidence=det.get("confidence", DEFAULT_CONFIDENCE),
-        iou=det.get("iou", DEFAULT_IOU),
-        device=det.get("device", "cpu"),
-        backend=det.get("backend", "cpu"),
-        pool_size=det.get("pool_size", 2),
-        target_classes=det.get("target_classes", None),
-    )
 
     # Recording
     rec = raw.get("recording", {})
@@ -268,6 +398,80 @@ def load_config(path: str | Path | None = None) -> RaaqibConfig:
     # LPR (store raw dict for LPRManager)
     config.lpr = raw.get("lpr", {})
 
-    logger.info(f"Config loaded: {len(config.cameras)} cameras, "
-                f"{len(config.enabled_cameras)} enabled")
+    logger.info(
+        "Config loaded: %s cameras (%s enabled), %s model(s)",
+        len(config.cameras),
+        len(config.enabled_cameras),
+        len(config.models),
+    )
     return config
+
+
+def _is_polygon_degenerate(polygon: list[ZonePoint]) -> bool:
+    """
+    Check if a polygon is degenerate (all points collinear).
+    Uses cross-product to detect collinearity.
+    """
+    if len(polygon) < 3:
+        return True
+
+    # Check if all points are collinear using cross product
+    # If cross product of all consecutive edge pairs is zero, points are collinear
+    p0 = polygon[0]
+    for i in range(1, len(polygon) - 1):
+        p1 = polygon[i]
+        p2 = polygon[i + 1]
+        # Cross product: (p1 - p0) × (p2 - p0)
+        cross = (p1.x - p0.x) * (p2.y - p0.y) - (p1.y - p0.y) * (p2.x - p0.x)
+        if cross != 0:
+            return False  # Non-zero cross product means non-collinear
+    return True  # All cross products were zero — degenerate polygon
+
+
+def validate_config(config: AppConfig, config_path: Path | None = None) -> list[str]:
+    errors: list[str] = []
+
+    # Resolve model paths relative to config file if provided
+    base_dir = config_path.parent if config_path else Path.cwd()
+
+    # Model assignment validation
+    for cam in config.cameras:
+        if cam.model not in config.models:
+            errors.append(
+                f"Camera '{cam.id}' references model '{cam.model}' "
+                f"which is not defined in models: {list(config.models.keys())}"
+            )
+
+    # Model config validation
+    for model_id, model_cfg in config.models.items():
+        model_path = Path(model_cfg.path)
+        # Try absolute path first, then relative to config directory
+        if not model_path.is_absolute():
+            model_path = base_dir / model_path
+        if not model_path.exists():
+            errors.append(f"Model '{model_id}' path not found: {model_cfg.path} (resolved: {model_path})")
+        if model_cfg.device not in ("cpu", "cuda", "mps", "tpu"):
+            errors.append(f"Model '{model_id}' has unknown device: {model_cfg.device}")
+        if not (0.0 < model_cfg.confidence_threshold < 1.0):
+            errors.append(f"Model '{model_id}' confidence_threshold must be in (0, 1)")
+        if model_cfg.pool_size < 1:
+            errors.append(f"Model '{model_id}' pool_size must be >= 1")
+
+    # Zone validation
+    for cam in config.cameras:
+        for zone in cam.zones:
+            if zone.type not in ("trigger", "exclude"):
+                errors.append(
+                    f"Camera '{cam.id}' zone '{zone.id}': "
+                    f"type must be 'trigger' or 'exclude', got '{zone.type}'"
+                )
+            if len(zone.polygon) < 3:
+                errors.append(
+                    f"Camera '{cam.id}' zone '{zone.id}': polygon must have >=3 points"
+                )
+            elif _is_polygon_degenerate(zone.polygon):
+                errors.append(
+                    f"Camera '{cam.id}' zone '{zone.id}': polygon is degenerate (all points collinear)"
+                )
+
+    return errors

@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 def create_app(state_dict: dict, db_path: str, config) -> FastAPI:
     """Create and configure FastAPI app."""
+    import psutil
 
     app = FastAPI(
         title="Raaqib NVR API",
@@ -37,19 +38,99 @@ def create_app(state_dict: dict, db_path: str, config) -> FastAPI:
     from src.core.database import Database
     db = Database(db_path)
 
+    # Cache startup time for uptime calculation
+    _start_time = time.time()
+
+    # Pre-build model-to-camera map (cached at startup)
+    _model_camera_map: dict[str, list[str]] = {model_id: [] for model_id in config.models}
+    for cam in config.enabled_cameras:
+        _model_camera_map.setdefault(cam.model, []).append(cam.id)
+
+    def _build_models_summary() -> dict:
+        models = {}
+        for model_id, model_cfg in config.models.items():
+            models[model_id] = {
+                "path": model_cfg.path,
+                "device": model_cfg.device,
+                "pool_size": model_cfg.pool_size,
+                "confidence_threshold": model_cfg.confidence_threshold,
+                "classes": model_cfg.classes,
+                "cameras": _model_camera_map.get(model_id, []),
+            }
+        return models
+
+    def _get_system_stats() -> dict:
+        """Get system resource usage."""
+        try:
+            return {
+                "cpu_percent": psutil.cpu_percent(interval=None),
+                "memory_percent": psutil.virtual_memory().percent,
+                "disk_percent": psutil.disk_usage("/").percent if hasattr(psutil, "disk_usage") else 0,
+            }
+        except Exception:
+            return {"cpu_percent": 0, "memory_percent": 0, "disk_percent": 0}
+
+    def _get_storage_stats() -> dict:
+        """Get recording storage statistics."""
+        rec_dir = Path(config.recording.output_dir)
+        snap_dir = Path(config.snapshots.output_dir)
+        try:
+            recordings = list(rec_dir.glob("*.mp4")) if rec_dir.exists() else []
+            snapshots = list(snap_dir.glob("*.jpg")) if snap_dir.exists() else []
+            total_size = sum(f.stat().st_size for f in recordings)
+            return {
+                "recordings_count": len(recordings),
+                "snapshots_count": len(snapshots),
+                "total_size_mb": round(total_size / (1024 * 1024), 2),
+            }
+        except Exception:
+            return {"recordings_count": 0, "snapshots_count": 0, "total_size_mb": 0}
+
+    def _camera_payload(camera_id: str) -> dict | None:
+        cam_cfg = config.get_camera(camera_id)
+        if cam_cfg is None:
+            return None
+
+        state = dict(state_dict.get(camera_id, {}))
+        model_cfg = config.models.get(cam_cfg.model)
+        state.update({
+            "id": cam_cfg.id,
+            "name": cam_cfg.name,
+            "model": cam_cfg.model,
+            "model_path": model_cfg.path if model_cfg else None,
+            "model_device": model_cfg.device if model_cfg else None,
+            "status": "connected" if state.get("connected") else "disconnected",
+        })
+        return state
+
     # ── System ────────────────────────────────────────────────────────────────
 
     @app.get("/api/status")
     def get_status():
         cameras_state = {
-            k: v for k, v in state_dict.items()
-            if k not in ("events", "active_events") and ":" not in k
+            cam.id: _camera_payload(cam.id)
+            for cam in config.enabled_cameras
         }
+        # Aggregate detection stats from all cameras
+        total_detections = sum(
+            state_dict.get(cam.id, {}).get("detection_count", 0)
+            for cam in config.enabled_cameras
+        )
+        active_events = state_dict.get("active_events", [])
+
         return {
             "status": "running",
+            "uptime_seconds": round(time.time() - _start_time, 1),
             "timestamp": time.time(),
+            "system": _get_system_stats(),
             "cameras": cameras_state,
-            "active_events": state_dict.get("active_events", []),
+            "detection": {
+                "total_detections": total_detections,
+                "active_events": len(active_events),
+            },
+            "storage": _get_storage_stats(),
+            "models": _build_models_summary(),
+            "active_events": active_events,
         }
 
     @app.get("/api/stats")
@@ -61,16 +142,20 @@ def create_app(state_dict: dict, db_path: str, config) -> FastAPI:
     @app.get("/api/cameras")
     def list_cameras():
         return {
-            k: v for k, v in state_dict.items()
-            if k not in ("events", "active_events") and ":" not in k
+            cam.id: _camera_payload(cam.id)
+            for cam in config.enabled_cameras
         }
 
     @app.get("/api/cameras/{camera_id}")
     def get_camera(camera_id: str):
-        state = state_dict.get(camera_id)
-        if state is None:
+        camera = _camera_payload(camera_id)
+        if camera is None:
             raise HTTPException(404, f"Camera {camera_id} not found")
-        return state
+        return camera
+
+    @app.get("/api/models")
+    def list_models():
+        return _build_models_summary()
 
     # ── Live MJPEG stream ─────────────────────────────────────────────────────
 
@@ -118,8 +203,12 @@ def create_app(state_dict: dict, db_path: str, config) -> FastAPI:
         limit: int = Query(50, le=500),
         offset: int = Query(0),
     ):
-        return db.get_events(camera_id=camera_id, label=label,
-                             limit=limit, offset=offset)
+        return db.get_events(
+            camera_id=camera_id or "",
+            label=label or "",
+            limit=limit,
+            offset=offset,
+        )
 
     @app.get("/api/events/active")
     def list_active_events():

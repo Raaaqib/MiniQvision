@@ -10,8 +10,9 @@ import numpy as np
 import time
 import logging
 import multiprocessing as mp
+from queue import Full
+from typing import Any
 
-from src.config import CameraConfig
 from src.core.camera.camera import FramePacket
 from src.core.const import (
     MOG2_HISTORY, MOG2_VAR_THRESHOLD, MIN_CONTOUR_AREA, MOTION_COOLDOWN_S
@@ -72,17 +73,18 @@ class MOG2MotionDetector:
 
 
 def motion_process(
-    config: CameraConfig,
+    config: Any,
     in_queue: mp.Queue,          # receives FramePackets from capture
-    detection_queue: mp.Queue,   # sends motion packets to detection pool
+    detection_queues: dict,      # model_id -> detection queue
+    camera_model_map: dict,      # camera_id -> model_id
     record_queue: mp.Queue,      # sends all packets to recorder
     state_dict: dict,
-    stop_event: mp.Event,
+    stop_event: Any,
 ):
     """
     Motion detection process entry point.
     Forwards ALL packets to record_queue (for pre-buffer).
-    Only forwards motion packets to detection_queue.
+    Only forwards motion packets to the configured model queue.
     """
     from src.core.log_utils import configure_logging
     configure_logging(f"motion:{config.id}")
@@ -141,10 +143,19 @@ def motion_process(
         if motion and score >= config.motion_threshold and (now - last_motion_time) >= MOTION_COOLDOWN_S:
             last_motion_time = now
             motion_frame_count += 1
+            model_id = camera_model_map.get(config.id, "default")
+            model_queue = detection_queues.get(model_id)
+            if model_queue is None:
+                logger.warning("[%s] no detection queue configured for model '%s'", config.id, model_id)
+                continue
             try:
-                detection_queue.put_nowait(packet)
-            except Exception:
-                pass  # drop if detection pool is busy
+                model_queue.put_nowait(packet)
+            except Full:
+                logger.warning(
+                    "[%s] detection queue for '%s' full, dropping frame",
+                    config.id,
+                    model_id,
+                )
         elif motion and score < config.motion_threshold:
             # Score too low — suppress ONNX, log occasionally
             if total_frames % 100 == 0:
