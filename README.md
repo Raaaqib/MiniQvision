@@ -117,11 +117,25 @@ fi
 #### 4. Create Configuration File
 
 Copy the template and customize:
+
+**Windows (PowerShell):**
+```powershell
+Copy-Item src/config/config.yaml config_local.yaml
+```
+
+**macOS / Linux:**
 ```bash
 cp src/config/config.yaml config_local.yaml
 ```
 
-Edit `config_local.yaml` with your camera settings (see [Configuration](#configuration) section below).
+Open and edit `config_local.yaml` with your camera settings:
+
+**Windows / macOS / Linux (VS Code):**
+```bash
+code config_local.yaml
+```
+
+See [Configuration](#configuration) below for field examples.
 
 #### 5. Start the Application
 
@@ -229,11 +243,21 @@ Press **Ctrl+C** in the terminal. Graceful shutdown in ~5 seconds.
 ### Getting Started with Configuration
 
 1. **Copy the default template:**
-   ```bash
-   cp src/config/config.yaml config_local.yaml
-   ```
+  **Windows (PowerShell):**
+  ```powershell
+  Copy-Item src/config/config.yaml config_local.yaml
+  ```
+
+  **macOS / Linux:**
+  ```bash
+  cp src/config/config.yaml config_local.yaml
+  ```
 
 2. **Edit `config_local.yaml` with your settings:**
+
+  ```bash
+  code config_local.yaml
+  ```
 
    ```yaml
    # Cameras
@@ -242,28 +266,32 @@ Press **Ctrl+C** in the terminal. Graceful shutdown in ~5 seconds.
        name: "Front Door"
        source: "rtsp://admin:pass@192.168.1.100:554/stream"
        # or for USB webcam: "0" (device index)
+       model: default
        enabled: true
        fps_target: 10
        width: 1280
        height: 720
 
-   # Detection
-   detection:
-     model_path: "models/yolo11n.onnx"
-     confidence_threshold: 0.45
-     device: "cpu"  # Options: cpu | cuda | mps | tpu
+   # Models
+   models:
+     default:
+       path: "models/yolo11n.onnx"
+       device: "cpu"  # Options: cpu | cuda | mps | tpu
+       confidence_threshold: 0.45
+       pool_size: 1
+       classes: []
 
    # Recording
    recording:
      enabled: true
-     pre_capture_seconds: 3
-     post_capture_seconds: 8
-     max_clip_seconds: 60
+     pre_capture_s: 3
+     post_capture_s: 8
+     max_clip_s: 60
 
    # MQTT (optional)
    mqtt:
      enabled: false
-     broker: "127.0.0.1"
+     host: "127.0.0.1"
      port: 1883
    ```
 
@@ -362,12 +390,15 @@ Main Process
 ### CPU-Only
 
 ```yaml
-detection:
-  device: "cpu"
-  model_path: "models/yolo11n.onnx"
+models:
+  default:
+    path: "models/yolo11n.onnx"
+    device: "cpu"
+    confidence_threshold: 0.45
 
 cameras:
-  - fps_target: 5
+  - model: default
+    fps_target: 5
     width: 640
     height: 480
 ```
@@ -375,11 +406,15 @@ cameras:
 ### GPU (NVIDIA CUDA)
 
 ```yaml
-detection:
-  device: "cuda"
+models:
+  default:
+    path: "models/yolo11n.onnx"
+    device: "cuda"
+    confidence_threshold: 0.45
 
 cameras:
-  - fps_target: 15
+  - model: default
+    fps_target: 15
     width: 1280
     height: 720
 ```
@@ -387,9 +422,14 @@ cameras:
 ### Edge TPU
 
 ```yaml
-detection:
-  device: "tpu"
-  model_path: "models/yolo11n_edge_tpu.tflite"
+models:
+  default:
+    path: "models/yolo11n_edge_tpu.tflite"
+    device: "tpu"
+    confidence_threshold: 0.45
+
+cameras:
+  - model: default
 ```
 
 ---
@@ -401,7 +441,7 @@ detection:
 ```yaml
 mqtt:
   enabled: true
-  broker: "192.168.1.100"
+  host: "192.168.1.100"
   port: 1883
 ```
 
@@ -454,7 +494,7 @@ ffmpeg -rtsp_transport tcp -i "rtsp://..." -t 5 -f null -
 
 1. Lower FPS: `fps_target: 5`
 2. Reduce resolution: `width: 640`
-3. Adjust confidence: `confidence_threshold: 0.5`
+3. Adjust confidence: `models.default.confidence_threshold: 0.5`
 
 ### High CPU
 
