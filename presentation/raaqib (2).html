@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Raaqib NVR — Intelligent Surveillance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+/* ── LIGHT theme ── */
+:root {
+  --ink: #1a1917; --ink2: #3d3b37; --muted: #888680; --faint: #b8b5af;
+  --rule: #e4e1db; --surface: #f7f5f1; --white: #ffffff;
+  --accent: #c4773a; --accent-pale: #f4ece2; --bg: #ffffff;
+  --pipeline-bg: #1a1917; --pipeline-eyebrow: rgba(255,255,255,0.25);
+  --pipeline-h: #f0ede8; --pipeline-sub: rgba(255,255,255,0.4);
+  --arch-fill: #f7f5f1; --arch-box: white; --arch-main: #1a1917;
+  --arch-text: #888680; --arch-bus: #eeebe4; --arch-bus-text: #a09c96;
+  --arch-line: #d4d0ca; --arch-stroke: #dedad4; --arch-pool-fill: #f0ece5;
+  --arch-note: #c4c0b8; --closing-bg: #f7f5f1;
+}
+
+/* ── DARK theme ── */
+[data-theme="dark"] {
+  --ink: #f0ede8; --ink2: #c8c5be; --muted: #888680; --faint: #555250;
+  --rule: #2e2c28; --surface: #1e1c19; --white: #141210;
+  --accent: #c4773a; --accent-pale: #2a1f12; --bg: #0f0e0c;
+  --pipeline-bg: #0a0908; --pipeline-eyebrow: rgba(255,255,255,0.18);
+  --pipeline-h: #f0ede8; --pipeline-sub: rgba(255,255,255,0.35);
+  --arch-fill: #1a1917; --arch-box: #1e1c19; --arch-main: #f0ede8;
+  --arch-text: #888680; --arch-bus: #2a2825; --arch-bus-text: #666360;
+  --arch-line: #3a3835; --arch-stroke: #333130; --arch-pool-fill: #2a2017;
+  --arch-note: #444240; --closing-bg: #141210;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg); color: var(--ink);
+  overflow-x: hidden;
+  transition: background 0.35s ease, color 0.35s ease;
+}
+
+/* ══════════════════════════════
+   SLIDE MODE
+══════════════════════════════ */
+body.slide-mode { overflow: hidden; }
+body.slide-mode .slide-wrapper { height: 100vh; overflow: hidden; }
+
+/* hide ALL section-level elements */
+body.slide-mode section,
+body.slide-mode #hero {
+  display: none;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+/* hide the <hr> dividers between slides */
+body.slide-mode .section-rule { display: none; }
+
+/* show active slide — generic (non-hero) */
+body.slide-mode section.active-slide {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* hero needs grid, not flex */
+body.slide-mode #hero.active-slide {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 48px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 48px 56px 32px;
+  min-height: unset;
+  overflow-y: hidden;
+}
+body.slide-mode .scroll-hint { display: none; }
+
+/* ── SLIDE MODE spacing overrides (tuned for 15" ~1366×768) ── */
+body.slide-mode .section {
+  padding: 32px 56px 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  height: 100vh;
+  overflow-y: auto;
+}
+body.slide-mode #pipeline { padding: 40px 56px; }
+body.slide-mode #closing  { padding: 48px 56px; text-align: center; align-items: center; }
+
+/* Typography */
+body.slide-mode .h-display  { font-size: clamp(2.4rem, 4vw, 4rem); }
+body.slide-mode .h-section  { font-size: clamp(1.4rem, 2.2vw, 2.2rem); }
+body.slide-mode .eyebrow    { margin-bottom: 14px; }
+body.slide-mode .body       { font-size: 0.88rem; line-height: 1.6; }
+body.slide-mode .slide-n    { margin-top: 16px; }
+
+/* Grids */
+body.slide-mode .sol-grid   { margin-top: 20px; gap: 12px; }
+body.slide-mode .comp-grid  { margin-top: 20px; gap: 10px; }
+body.slide-mode .perf-grid  { margin-top: 20px; gap: 12px; }
+body.slide-mode .stat-grid  { gap: 10px; }
+body.slide-mode .two-col    { gap: 40px; }
+body.slide-mode .two-stage  { margin-top: 16px; gap: 14px; }
+
+/* Cards */
+body.slide-mode .sol-card,
+body.slide-mode .comp-card  { padding: 14px 16px; }
+body.slide-mode .sol-card p,
+body.slide-mode .comp-card p { font-size: 0.72rem; line-height: 1.5; margin-bottom: 8px; }
+body.slide-mode .perf-card  { padding: 18px; }
+body.slide-mode .perf-card h4 { margin-bottom: 12px; }
+body.slide-mode .perf-row   { margin-bottom: 7px; padding-bottom: 7px; }
+body.slide-mode .pr-label   { font-size: 0.74rem; }
+body.slide-mode .pr-val     { font-size: 0.66rem; }
+
+/* Stats */
+body.slide-mode .stat-box   { padding: 16px; }
+body.slide-mode .stat-box .n { font-size: 2rem; }
+body.slide-mode .stat-box.wide .n { font-size: 1rem; }
+
+/* Pills */
+body.slide-mode .pills      { margin-top: 12px; gap: 8px; }
+body.slide-mode .pill       { padding: 12px 16px; }
+body.slide-mode .pill strong { font-size: 0.82rem; }
+body.slide-mode .pill span  { font-size: 0.72rem; }
+
+/* Architecture diagram */
+body.slide-mode .arch-wrap  { margin-top: 16px; padding: 16px 20px; max-height: 52vh; overflow: hidden; }
+body.slide-mode .arch-wrap svg { min-width: 0; }
+
+/* Pipeline */
+body.slide-mode .pipe-flow  { margin-top: 20px; }
+body.slide-mode .pipe-stage { padding: 14px 12px; }
+body.slide-mode .pipe-name  { font-size: 0.82rem; margin-bottom: 5px; }
+body.slide-mode .pipe-detail { font-size: 0.56rem; line-height: 1.6; }
+body.slide-mode .pipe-ms    { font-size: 0.56rem; margin-top: 5px; }
+body.slide-mode .stage-box  { padding: 20px; }
+body.slide-mode .stage-box p { font-size: 0.76rem; line-height: 1.55; margin-bottom: 10px; }
+
+/* Efficiency strip */
+body.slide-mode .eff-strip  { padding: 20px; }
+body.slide-mode .eff-big    { font-size: 2rem; margin-bottom: 4px; }
+body.slide-mode .eff-small  { font-size: 0.7rem; }
+body.slide-mode .eff-stat   { padding: 0 16px; }
+
+/* ── Progress bar ── */
+#progress {
+  position: fixed; top: 0; left: 0; height: 1px;
+  background: var(--accent); z-index: 200;
+  transition: width 0.15s; width: 0%;
+}
+body.slide-mode #progress { display: none; }
+
+/* ── UI Controls ── */
+#ui-controls {
+  position: fixed; top: 16px; right: 16px;
+  display: flex; align-items: center; gap: 8px; z-index: 300;
+}
+#theme-toggle {
+  width: 38px; height: 38px; border-radius: 8px;
+  border: 1px solid var(--rule); background: var(--bg); color: var(--ink);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+#theme-toggle:hover { background: var(--surface); }
+#slidemode-toggle {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.58rem;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 0 12px; height: 38px; border-radius: 8px;
+  border: 1px solid var(--rule); background: var(--bg); color: var(--muted);
+  cursor: pointer; transition: background 0.2s, border-color 0.2s, color 0.2s;
+  white-space: nowrap;
+}
+#slidemode-toggle:hover { background: var(--surface); color: var(--ink); }
+body.slide-mode #slidemode-toggle { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+/* ── Slide nav ── */
+#slide-nav {
+  display: none; position: fixed; bottom: 20px; left: 50%;
+  transform: translateX(-50%); align-items: center; gap: 12px;
+  z-index: 300; background: var(--surface); border: 1px solid var(--rule);
+  border-radius: 40px; padding: 7px 14px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+}
+body.slide-mode #slide-nav { display: flex; }
+.nav-btn {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;
+  letter-spacing: 0.08em; padding: 6px 16px; border-radius: 20px;
+  border: 1px solid var(--rule); background: var(--bg); color: var(--muted);
+  cursor: pointer; transition: background 0.15s, color 0.15s;
+}
+.nav-btn:hover:not(:disabled) { background: var(--ink); color: var(--bg); }
+.nav-btn:disabled { opacity: 0.28; cursor: default; }
+#slide-counter {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.62rem;
+  color: var(--faint); letter-spacing: 0.1em; min-width: 40px; text-align: center;
+}
+#space-hint {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.55rem;
+  color: var(--faint); letter-spacing: 0.08em;
+  border-left: 1px solid var(--rule); padding-left: 12px;
+}
+
+/* ══════════════════════════════
+   SCROLL MODE — base styles
+══════════════════════════════ */
+.section { padding: 120px 72px 100px; max-width: 1200px; margin: 0 auto; }
+.section.full { max-width: none; padding: 0; }
+.section-rule {
+  border: none; border-top: 1px solid var(--rule);
+  margin: 0 72px; transition: border-color 0.35s;
+}
+.eyebrow {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.68rem;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--faint); margin-bottom: 28px; display: block;
+}
+.h-display {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(3rem, 5vw, 5.5rem);
+  line-height: 1.0; letter-spacing: -0.03em; color: var(--ink);
+}
+.h-display em { font-style: italic; color: var(--accent); }
+.h-section {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(2rem, 3.2vw, 3.2rem);
+  line-height: 1.08; letter-spacing: -0.025em; color: var(--ink);
+}
+.h-section em { font-style: italic; color: var(--accent); }
+.body { font-size: 1rem; font-weight: 300; line-height: 1.8; color: var(--ink2); }
+.slide-n {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;
+  letter-spacing: 0.1em; color: var(--rule); margin-top: 64px; display: block;
+}
+.fi { opacity: 0; transform: translateY(18px); transition: opacity 0.7s ease, transform 0.7s ease; }
+.fi.v { opacity: 1; transform: none; }
+.d1 { transition-delay: 0.08s; } .d2 { transition-delay: 0.16s; }
+.d3 { transition-delay: 0.24s; } .d4 { transition-delay: 0.32s; }
+
+/* ── Hero ── */
+#hero {
+  min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr;
+  align-items: center; padding: 100px 72px 80px; gap: 80px;
+  max-width: 1200px; margin: 0 auto;
+}
+.hero-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 44px; }
+.tag { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; letter-spacing: 0.06em; padding: 5px 12px; border-radius: 100px; background: var(--surface); color: var(--muted); }
+.tag.hi { background: var(--ink); color: var(--bg); }
+.hero-right { display: flex; align-items: center; justify-content: center; }
+.camera-feed { width: 100%; max-width: 420px; background: var(--surface); border-radius: 12px; overflow: hidden; position: relative; }
+.feed-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: var(--surface); }
+.feed-id { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--muted); letter-spacing: 0.08em; }
+.live-dot { width: 6px; height: 6px; border-radius: 50%; background: #4db870; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+.feed-scene { height: 260px; background: var(--rule); position: relative; overflow: hidden; }
+.scene-bg { position: absolute; inset: 0; background: linear-gradient(180deg, var(--rule) 0%, var(--surface) 50%, var(--rule) 100%); }
+.scene-door { position: absolute; bottom: 0; left: 50%; transform: translateX(-25%); width: 56px; height: 96px; background: var(--faint); border-radius: 3px 3px 0 0; }
+.scene-door::after { content: ''; position: absolute; right: 9px; top: 50%; transform: translateY(-50%); width: 4px; height: 4px; border-radius: 50%; background: var(--muted); }
+.stick-figure { position: absolute; left: 40%; top: 12%; }
+.s-head { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 20px; height: 20px; border-radius: 50%; background: var(--muted); }
+.s-body { position: absolute; top: 22px; left: 50%; transform: translateX(-50%); width: 2px; height: 50px; background: var(--muted); }
+.s-arms { position: absolute; top: 34px; left: 10px; width: 42px; height: 2px; background: var(--muted); }
+.s-ll { position: absolute; top: 72px; left: 24px; width: 2px; height: 44px; background: var(--muted); transform: rotate(8deg); transform-origin: top; }
+.s-rl { position: absolute; top: 72px; left: 37px; width: 2px; height: 44px; background: var(--muted); transform: rotate(-8deg); transform-origin: top; }
+.det-box { position: absolute; left: 38%; top: 10%; width: 68px; height: 128px; border: 1.5px solid var(--ink); border-radius: 2px; animation: blink 3s infinite 0.5s; }
+@keyframes blink { 0%,80%,100%{opacity:1} 85%{opacity:0.2} }
+.det-label { position: absolute; top: -22px; left: -1px; font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; background: var(--ink); color: var(--bg); padding: 2px 7px; border-radius: 2px; white-space: nowrap; letter-spacing: 0.04em; }
+.feed-foot { display: flex; justify-content: space-between; padding: 9px 16px; background: var(--surface); }
+.feed-stat { font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; color: var(--faint); letter-spacing: 0.06em; }
+.feed-stat span { color: var(--muted); }
+.scroll-hint { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; letter-spacing: 0.14em; color: var(--faint); animation: drift 2.5s ease infinite; }
+@keyframes drift { 0%,100%{opacity:0.4;transform:translateX(-50%) translateY(0)} 50%{opacity:0.8;transform:translateX(-50%) translateY(-5px)} }
+
+/* ── Problem ── */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 72px; align-items: start; }
+.pills { display: flex; flex-direction: column; gap: 12px; margin-top: 32px; }
+.pill { display: flex; align-items: flex-start; gap: 16px; padding: 18px 20px; background: var(--surface); border-radius: 8px; }
+.pill-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 1px; }
+.pill strong { display: block; font-size: 0.88rem; font-weight: 500; margin-bottom: 3px; }
+.pill span { font-size: 0.78rem; color: var(--muted); line-height: 1.55; }
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.stat-box { background: var(--surface); border-radius: 10px; padding: 24px; text-align: center; }
+.stat-box .n { font-family: 'DM Serif Display', serif; font-size: 2.6rem; color: var(--ink); line-height: 1; margin-bottom: 8px; }
+.stat-box .l { font-size: 0.78rem; font-weight: 400; color: var(--muted); line-height: 1.4; }
+.stat-box.wide { grid-column: 1 / -1; text-align: left; }
+.stat-box.wide .n { font-size: 1.2rem; font-family: 'DM Serif Display', serif; line-height: 1.3; color: var(--ink); margin-bottom: 6px; }
+.stat-box.wide .l { font-size: 0.78rem; }
+
+/* ── Solution ── */
+.sol-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 52px; }
+.sol-card { padding: 28px 24px; background: var(--surface); border-radius: 10px; transition: background 0.2s; }
+.sol-card:hover { background: var(--rule); }
+.sol-num { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--faint); letter-spacing: 0.1em; margin-bottom: 14px; }
+.sol-card h3 { font-size: 0.95rem; font-weight: 500; margin-bottom: 8px; color: var(--ink); }
+.sol-card p { font-size: 0.8rem; font-weight: 300; line-height: 1.65; color: var(--muted); }
+
+/* ── Architecture ── */
+.arch-wrap { background: var(--surface); border-radius: 14px; padding: 40px; margin-top: 48px; overflow-x: auto; }
+.arch-wrap svg { width: 100%; min-width: 700px; height: auto; }
+
+/* ── Pipeline ── */
+#pipeline { background: var(--pipeline-bg); padding: 100px 72px; transition: background 0.35s; }
+#pipeline .eyebrow { color: var(--pipeline-eyebrow); }
+#pipeline .h-section { color: var(--pipeline-h); }
+#pipeline .h-section em { color: var(--accent); }
+.pipe-flow { display: flex; align-items: stretch; margin-top: 52px; overflow-x: auto; gap: 0; }
+.pipe-stage { flex: 1; min-width: 148px; padding: 24px 18px; background: rgba(255,255,255,0.04); position: relative; }
+.pipe-stage:first-child { border-radius: 10px 0 0 10px; }
+.pipe-stage:last-child  { border-radius: 0 10px 10px 0; }
+.pipe-stage + .pipe-stage { border-left: 1px solid rgba(255,255,255,0.06); }
+.pipe-stage.gate { background: rgba(196,119,58,0.1); }
+.pipe-num    { font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; color: rgba(255,255,255,0.2); letter-spacing: 0.1em; margin-bottom: 10px; }
+.pipe-name   { font-size: 0.88rem; font-weight: 500; color: rgba(255,255,255,0.85); margin-bottom: 8px; }
+.pipe-detail { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: rgba(255,255,255,0.3); line-height: 1.8; }
+.pipe-ms     { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--accent); margin-top: 8px; }
+.pipe-gate-label { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: #7dcb8f; margin-top: 4px; }
+.two-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 40px; }
+.stage-box  { padding: 28px; border-radius: 10px; background: rgba(255,255,255,0.04); }
+.stage-box h4 { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 12px; }
+.stage-box.s1 h4 { color: #7dcb8f; }
+.stage-box.s2 h4 { color: var(--accent); }
+.stage-box p  { font-size: 0.82rem; font-weight: 300; line-height: 1.65; color: rgba(255,255,255,0.45); margin-bottom: 14px; }
+.stage-pill   { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; padding: 5px 10px; border-radius: 4px; display: inline-block; }
+.stage-box.s1 .stage-pill { background: rgba(125,203,143,0.12); color: #7dcb8f; }
+.stage-box.s2 .stage-pill { background: rgba(196,119,58,0.12);  color: var(--accent); }
+
+/* ── Components ── */
+.comp-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-top: 52px; }
+.comp-card { background: var(--surface); border-radius: 10px; padding: 24px 20px; }
+.comp-card h4 { font-size: 0.88rem; font-weight: 500; margin-bottom: 6px; color: var(--ink); }
+.comp-card p  { font-size: 0.76rem; font-weight: 300; line-height: 1.6; color: var(--muted); margin-bottom: 12px; }
+.comp-meta { font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; color: var(--faint); line-height: 1.8; letter-spacing: 0.04em; }
+.bar-wrap { margin-top: 10px; }
+.bar-labels { display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 0.56rem; color: var(--faint); margin-bottom: 4px; }
+.bar-track  { height: 3px; background: var(--rule); border-radius: 2px; overflow: hidden; }
+.bar-fill   { height: 100%; border-radius: 2px; background: var(--ink); }
+
+/* ── Performance ── */
+.perf-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 52px; }
+.perf-card { background: var(--surface); border-radius: 10px; padding: 28px 24px; }
+.perf-card h4 { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--faint); margin-bottom: 20px; }
+.perf-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--rule); }
+.perf-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+.pr-label { font-size: 0.78rem; color: var(--ink2); }
+.pr-val   { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; font-weight: 500; color: var(--ink); white-space: nowrap; }
+.eff-strip { grid-column: 1 / -1; background: var(--ink); border-radius: 10px; padding: 32px; display: flex; align-items: center; }
+.eff-stat  { flex: 1; text-align: center; padding: 0 24px; }
+.eff-stat + .eff-stat { border-left: 1px solid rgba(255,255,255,0.08); }
+.eff-big   { font-family: 'DM Serif Display', serif; font-size: 2.8rem; color: #f0ede8; line-height: 1; margin-bottom: 6px; }
+.eff-small { font-size: 0.76rem; font-weight: 300; color: rgba(255,255,255,0.4); line-height: 1.45; }
+
+/* ── Closing ── */
+#closing { background: var(--closing-bg); padding: 120px 72px; text-align: center; display: flex; flex-direction: column; align-items: center; }
+.cta-row { display: flex; gap: 12px; justify-content: center; margin-top: 44px; }
+.btn { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 13px 26px; border-radius: 6px; text-decoration: none; transition: opacity 0.2s; }
+.btn:hover { opacity: 0.75; }
+.btn.primary   { background: var(--ink); color: var(--bg); }
+.btn.secondary { background: transparent; border: 1px solid var(--rule); color: var(--muted); }
+
+/* ── Responsive ── */
+@media (max-width: 980px) {
+  #hero { grid-template-columns: 1fr; padding: 80px 32px 60px; }
+  .hero-right { display: none; }
+  .section { padding: 80px 32px 72px; }
+  .section-rule { margin: 0 32px; }
+  .two-col   { grid-template-columns: 1fr; gap: 48px; }
+  .sol-grid  { grid-template-columns: 1fr 1fr; }
+  .comp-grid { grid-template-columns: 1fr 1fr; }
+  .perf-grid { grid-template-columns: 1fr; }
+  .two-stage { grid-template-columns: 1fr; }
+  .pipe-flow { flex-direction: column; }
+  #pipeline  { padding: 80px 32px; }
+  .eff-strip { flex-direction: column; gap: 24px; }
+  .eff-stat + .eff-stat { border-left: none; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 24px; }
+  #closing   { padding: 80px 32px; }
+  #ui-controls { top: 12px; right: 12px; }
+}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+
+<div id="ui-controls">
+  <button id="slidemode-toggle" title="Toggle slide mode">SLIDES</button>
+  <button id="theme-toggle" title="Toggle dark/light theme">🌙</button>
+</div>
+
+<div id="slide-nav">
+  <button class="nav-btn" id="btn-prev">← Prev</button>
+  <span id="slide-counter">1 / 8</span>
+  <button class="nav-btn" id="btn-next">Next →</button>
+  <span id="space-hint">space</span>
+</div>
+
+<div class="slide-wrapper">
+
+<!-- 01 HERO -->
+<section id="hero" style="position:relative" data-slide="1">
+  <div>
+    <span class="eyebrow">01 — Introduction</span>
+    <h1 class="h-display" style="max-width:560px">Raaqib<br><em>NVR</em></h1>
+    <p class="body" style="max-width:400px;margin-top:20px">
+      An open-source Network Video Recorder that runs entirely on your hardware. A two-stage pipeline — cheap MOG2 motion gating followed by YOLO 11 inference — means the GPU only wakes when something actually moves.
+    </p>
+    <div class="hero-tags">
+      <span class="tag hi">YOLO v11</span>
+      <span class="tag">Python · FastAPI</span>
+      <span class="tag">OpenCV MOG2</span>
+      <span class="tag">MQTT · SQLite</span>
+      <span class="tag">ONNX Runtime</span>
+    </div>
+  </div>
+  <div class="hero-right">
+    <div class="camera-feed">
+      <div class="feed-bar">
+        <span class="feed-id">CAM_01 · FRONT_DOOR</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="feed-stat"><span>1280×720</span></span>
+          <div class="live-dot"></div>
+        </div>
+      </div>
+      <div class="feed-scene">
+        <div class="scene-bg"></div>
+        <div class="scene-door"></div>
+        <div class="stick-figure">
+          <div class="s-head"></div><div class="s-body"></div>
+          <div class="s-arms"></div><div class="s-ll"></div><div class="s-rl"></div>
+        </div>
+        <div class="det-box"><span class="det-label">person 0.92</span></div>
+      </div>
+      <div class="feed-foot">
+        <span class="feed-stat">FPS <span>10.0</span></span>
+        <span class="feed-stat">MOTION <span style="color:#4db870">ACTIVE</span></span>
+        <span class="feed-stat">ID <span>obj_5</span></span>
+      </div>
+    </div>
+  </div>
+  <div class="scroll-hint">▾ scroll</div>
+</section>
+
+<hr class="section-rule">
+
+<!-- 02 PROBLEM -->
+<section class="section fi" data-slide="2">
+  <span class="eyebrow">02 — The Problem</span>
+  <div class="two-col">
+    <div>
+      <h2 class="h-section">Surveillance that<br><em>burns resources</em><br>for nothing</h2>
+      <p class="body" style="margin-top:20px">Traditional NVR systems run object detection on every frame, 24/7. In a typical residential setting, cameras capture hours of empty corridors, quiet parking lots, and unchanged scenes — yet expensive GPU cycles are wasted on every single frame.</p>
+      <div class="pills">
+        <div class="pill"><div class="pill-icon">⚡</div><div><strong>Massive Resource Waste</strong><span>Continuous YOLO inference on idle scenes consumes 180+ GPU-seconds per hour per camera, even when nothing is happening.</span></div></div>
+        <div class="pill"><div class="pill-icon">🔒</div><div><strong>Privacy Risk</strong><span>Cloud-based NVR solutions upload footage to third-party servers. There's no control over who processes your camera data.</span></div></div>
+        <div class="pill"><div class="pill-icon">💸</div><div><strong>High Hardware Cost</strong><span>Running an always-on inference engine forces users into expensive dedicated GPU hardware just to watch an empty front porch.</span></div></div>
+      </div>
+    </div>
+    <div class="stat-grid fi d1">
+      <div class="stat-box"><div class="n">98%</div><div class="l">of frames in a typical residential camera contain no relevant activity</div></div>
+      <div class="stat-box"><div class="n">180s</div><div class="l">GPU-seconds wasted per hour with naive continuous YOLO inference</div></div>
+      <div class="stat-box"><div class="n">24/7</div><div class="l">Cloud NVRs run inference non-stop — billing you for every idle moment</div></div>
+      <div class="stat-box"><div class="n">0%</div><div class="l">Privacy guarantee when footage leaves your home network</div></div>
+      <div class="stat-box wide"><div class="n">The bottleneck is not the camera — it's how we process it.</div><div class="l">Most frames don't need AI. They need a fast, cheap discard decision.</div></div>
+    </div>
+  </div>
+  <span class="slide-n">02 / 07</span>
+</section>
+
+<hr class="section-rule">
+
+<!-- 03 SOLUTION -->
+<section class="section" data-slide="3">
+  <span class="eyebrow">03 — The Idea</span>
+  <h2 class="h-section fi" style="max-width:640px">Smart gating: only run AI<br>when <em>something moves</em></h2>
+  <p class="body fi d1" style="max-width:600px;margin-top:16px">Raaqib introduces a two-stage detection pipeline — a cheap motion filter gates expensive YOLO inference. Frames with no motion are discarded in milliseconds. Only frames that matter reach the neural network.</p>
+  <div class="sol-grid">
+    <div class="sol-card fi d1"><div class="sol-num">01</div><h3>Two-Stage Pipeline</h3><p>MOG2 background subtraction runs first — a fast CPU check. Only motion-positive frames are forwarded to YOLO 11, slashing GPU load by 98%.</p></div>
+    <div class="sol-card fi d2"><div class="sol-num">02</div><h3>Multiprocess Architecture</h3><p>Raaqib is a single-host monolith where each functional unit — capture, motion, detection, tracking, recording — runs as a separate OS process via <code>mp.Process()</code>. No GIL contention. IPC queues carry typed data between stages.</p></div>
+    <div class="sol-card fi d3"><div class="sol-num">03</div><h3>100% On-Device</h3><p>No cloud. No subscriptions. All inference, storage, and processing stays on your hardware. Integrates with Home Assistant via MQTT for local automation.</p></div>
+    <div class="sol-card fi d1"><div class="sol-num">04</div><h3>ONNX Runtime</h3><p>Model weights exported to ONNX format — ~50MB on disk vs. the full PyTorch training environment. No torch dependency at runtime; ONNX Runtime handles CPU, CUDA, and CoreML execution providers.</p></div>
+    <div class="sol-card fi d2"><div class="sol-num">05</div><h3>Smart Recording</h3><p>Pre-capture circular buffer ensures you never miss the moment before detection. FFmpeg H.264/H.265 encoding with automatic retention management.</p></div>
+    <div class="sol-card fi d3"><div class="sol-num">06</div><h3>REST API + React UI</h3><p>Full FastAPI REST interface. React dashboard for live monitoring, event browsing, and clip management. OpenAPI spec auto-generated.</p></div>
+  </div>
+  <span class="slide-n">03 / 07</span>
+</section>
+
+<hr class="section-rule">
+
+<!-- 04 ARCHITECTURE -->
+<section class="section" data-slide="4">
+  <span class="eyebrow">04 — High Level Design</span>
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:24px">
+    <h2 class="h-section fi" style="margin-bottom:0">Modular monolith,<br><em>process-per-component</em></h2>
+    <p class="body fi d1" style="max-width:360px;font-size:0.88rem">All logic runs in a single deployable on one host. Each functional unit gets its own OS process and communicates through typed IPC queues — no GIL contention, no shared memory races.</p>
+  </div>
+  <div class="arch-wrap fi">
+    <svg viewBox="0 0 900 400" xmlns="http://www.w3.org/2000/svg" font-family="DM Sans, sans-serif">
+      <rect x="0" y="0" width="900" height="400" fill="var(--arch-fill)" rx="8"/>
+      <rect x="285" y="12" width="330" height="44" rx="6" fill="var(--arch-main)"/>
+      <text x="450" y="30" text-anchor="middle" fill="#f0ede8" font-size="10.5" font-weight="500" dy="4">MAIN PROCESS — app.py</text>
+      <text x="450" y="46" text-anchor="middle" fill="rgba(255,255,255,0.35)" font-size="9">spawn · monitor · graceful shutdown</text>
+      <line x1="450" y1="56" x2="450" y2="74" stroke="var(--arch-line)" stroke-width="1.2" stroke-dasharray="3,3"/>
+      <rect x="80" y="74" width="740" height="20" rx="4" fill="var(--arch-bus)"/>
+      <text x="450" y="88" text-anchor="middle" fill="var(--arch-bus-text)" font-size="8.5" letter-spacing="0.12em">IPC QUEUES · SHARED STATE DICT</text>
+      <rect x="44" y="108" width="116" height="72" rx="6" fill="var(--arch-box)" stroke="var(--arch-stroke)" stroke-width="1"/>
+      <text x="102" y="126" text-anchor="middle" fill="var(--arch-text)" font-size="8.5" letter-spacing="0.1em" font-weight="500">CAPTURE</text>
+      <text x="102" y="140" text-anchor="middle" fill="var(--arch-main)" font-size="9">camera/capture.py</text>
+      <text x="102" y="154" text-anchor="middle" fill="var(--arch-text)" font-size="8">RTSP · USB · HTTP</text>
+      <text x="102" y="168" text-anchor="middle" fill="var(--arch-text)" font-size="8">→ raw frames</text>
+      <rect x="174" y="108" width="116" height="72" rx="6" fill="var(--arch-box)" stroke="var(--arch-stroke)" stroke-width="1"/>
+      <text x="232" y="126" text-anchor="middle" fill="var(--arch-text)" font-size="8.5" letter-spacing="0.1em" font-weight="500">MOTION</text>
+      <text x="232" y="140" text-anchor="middle" fill="var(--arch-main)" font-size="9">motion/motion.py</text>
+      <text x="232" y="154" text-anchor="middle" fill="var(--arch-text)" font-size="8">MOG2 BG Subtraction</text>
+      <text x="232" y="168" text-anchor="middle" fill="var(--arch-text)" font-size="8">~2–5ms/frame</text>
+      <rect x="34" y="96" width="266" height="96" rx="6" fill="none" stroke="var(--arch-line)" stroke-width="1" stroke-dasharray="4,3" opacity="0.6"/>
+      <text x="167" y="204" text-anchor="middle" fill="var(--arch-text)" font-size="8" letter-spacing="0.08em">PER-CAMERA PROCESSES (×N)</text>
+      <rect x="330" y="108" width="140" height="72" rx="6" fill="var(--arch-pool-fill)" stroke="var(--arch-stroke)" stroke-width="1"/>
+      <text x="400" y="126" text-anchor="middle" fill="var(--arch-text)" font-size="8.5" letter-spacing="0.1em" font-weight="500">DETECTION POOL</text>
+      <text x="400" y="140" text-anchor="middle" fill="var(--arch-main)" font-size="9">detectors/pool.py</text>
+      <text x="400" y="154" text-anchor="middle" fill="var(--arch-text)" font-size="8">YOLO 11 · ONNX</text>
+      <text x="400" y="168" text-anchor="middle" fill="var(--arch-text)" font-size="8">Worker × pool_size</text>
+      <rect x="486" y="108" width="118" height="72" rx="6" fill="var(--arch-box)" stroke="var(--arch-stroke)" stroke-width="1"/>
+      <text x="545" y="126" text-anchor="middle" fill="var(--arch-text)" font-size="8.5" letter-spacing="0.1em" font-weight="500">TRACKING</text>
+      <text x="545" y="140" text-anchor="middle" fill="var(--arch-main)" font-size="9">object_processing.py</text>
+      <text x="545" y="154" text-anchor="middle" fill="var(--arch-text)" font-size="8">Centroid Tracker</text>
+      <text x="545" y="168" text-anchor="middle" fill="var(--arch-text)" font-size="8">Object ID persistence</text>
+      <rect x="618" y="108" width="118" height="72" rx="6" fill="var(--arch-box)" stroke="var(--arch-stroke)" stroke-width="1"/>
+      <text x="677" y="126" text-anchor="middle" fill="var(--arch-text)" font-size="8.5" letter-spacing="0.1em" font-weight="500">RECORDING</text>
+      <text x="677" y="140" text-anchor="middle" fill="var(--arch-main)" font-size="9">record/recording.py</text>
+      <text x="677" y="154" text-anchor="middle" fill="var(--arch-text)" font-size="8">FFmpeg H.264/H.265</text>
+      <text x="677" y="168" text-anchor="middle" fill="var(--arch-text)" font-size="8">Pre-capture buffer</text>
+      <defs>
+        <marker id="arr" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto"><path d="M0,0 L5,2.5 L0,5 Z" fill="var(--arch-text)"/></marker>
+      </defs>
+      <line x1="160" y1="148" x2="174" y2="148" stroke="var(--arch-text)" stroke-width="1.2" marker-end="url(#arr)"/>
+      <line x1="290" y1="132" x2="330" y2="132" stroke="var(--arch-text)" stroke-width="1.2" marker-end="url(#arr)"/>
+      <line x1="470" y1="148" x2="486" y2="148" stroke="var(--arch-text)" stroke-width="1.2" marker-end="url(#arr)"/>
+      <path d="M232 180 Q232 214 550 214 Q640 214 677 180" stroke="var(--arch-line)" stroke-width="1" stroke-dasharray="3,2.5" fill="none" marker-end="url(#arr)"/>
+      <line x1="545" y1="180" x2="545" y2="228" stroke="var(--arch-line)" stroke-width="1.2" marker-end="url(#arr)"/>
+      <rect x="178" y="228" width="660" height="20" rx="4" fill="var(--arch-bus)"/>
+      <text x="508" y="242" text-anchor="middle" fill="var(--arch-bus-text)" font-size="8.5" letter-spacing="0.1em">EVENT QUEUE BUS</text>
+      <rect x="178" y="262" width="128" height="64" rx="6" fill="var(--arch-box)" stroke="var(--arch-stroke)" stroke-width="1"/>
+      <text x="242" y="280" text-anchor="middle" fill="var(--arch-text)" font-size="8.5" letter-spacing="0.08em" font-weight="500">MQTT</text>
+      <text x="242" y="293" text-anchor="middle" fill="var(--arch-text)" font-size="8">mqtt.py · Home Assistant</text>
+      <text x="242" y="306" text-anchor="middle" fill="var(--arch-text)" font-size="8">raaqib/{cam}/detection</text>
+      <rect x="318" y="262" width="128" height="64" rx="6" fill="var(--arch-box)" stroke="var(--arch-stroke)" stroke-width="1"/>
+      <text x="382" y="280" text-anchor="middle" fill="var(--arch-text)" font-size="8.5" letter-spacing="0.08em" font-weight="500">DATABASE</text>
+      <text x="382" y="293" text-anchor="middle" fill="var(--arch-text)" font-size="8">database.py · SQLite</text>
+      <text x="382" y="306" text-anchor="middle" fill="var(--arch-text)" font-size="8">Events · Retention</text>
+      <rect x="458" y="262" width="128" height="64" rx="6" fill="var(--arch-box)" stroke="var(--arch-stroke)" stroke-width="1"/>
+      <text x="522" y="280" text-anchor="middle" fill="var(--arch-text)" font-size="8.5" letter-spacing="0.08em" font-weight="500">SNAPSHOTS</text>
+      <text x="522" y="293" text-anchor="middle" fill="var(--arch-text)" font-size="8">JPEG on detection</text>
+      <text x="522" y="306" text-anchor="middle" fill="var(--arch-text)" font-size="8">Bounding-box overlay</text>
+      <rect x="598" y="262" width="128" height="64" rx="6" fill="var(--arch-pool-fill)" stroke="var(--arch-stroke)" stroke-width="1"/>
+      <text x="662" y="280" text-anchor="middle" fill="var(--arch-text)" font-size="8.5" letter-spacing="0.08em" font-weight="500">API + REACT UI</text>
+      <text x="662" y="293" text-anchor="middle" fill="var(--arch-text)" font-size="8">api/app.py · :8000</text>
+      <text x="662" y="306" text-anchor="middle" fill="var(--arch-text)" font-size="8">REST · React :5173</text>
+      <line x1="242" y1="248" x2="242" y2="262" stroke="var(--arch-line)" stroke-width="1" marker-end="url(#arr)"/>
+      <line x1="382" y1="248" x2="382" y2="262" stroke="var(--arch-line)" stroke-width="1" marker-end="url(#arr)"/>
+      <line x1="522" y1="248" x2="522" y2="262" stroke="var(--arch-line)" stroke-width="1" marker-end="url(#arr)"/>
+      <line x1="662" y1="248" x2="662" y2="262" stroke="var(--arch-line)" stroke-width="1" marker-end="url(#arr)"/>
+      <text x="450" y="358" text-anchor="middle" fill="var(--arch-note)" font-size="8" letter-spacing="0.12em">SINGLE-HOST MONOLITH · mp.Process() PER COMPONENT · IPC QUEUES · STOP EVENT FOR GRACEFUL SHUTDOWN</text>
+    </svg>
+  </div>
+  <span class="slide-n">04 / 07</span>
+</section>
+
+<!-- 05 PIPELINE -->
+<section id="pipeline" data-slide="5">
+  <div style="max-width:1200px;margin:0 auto">
+    <span class="eyebrow">05 — The Two-Stage Pipeline</span>
+    <h2 class="h-section fi">Stage 1 gates Stage 2.<br><em>The core innovation.</em></h2>
+    <p style="font-size:0.92rem;font-weight:300;color:var(--pipeline-sub);margin-top:10px" class="fi d1">Frame journey from RTSP stream to MQTT event — 70ms on CPU-only, up to 520ms worst-case with YOLO on CPU</p>
+    <div class="pipe-flow fi d2">
+      <div class="pipe-stage"><div class="pipe-num">01</div><div class="pipe-name">RTSP Capture</div><div class="pipe-detail">OpenCV VideoCapture<br>Decode H.264/H.265<br>Target FPS: 10</div><div class="pipe-ms">~0ms</div></div>
+      <div class="pipe-stage gate"><div class="pipe-num">02</div><div class="pipe-name">MOG2 Motion</div><div class="pipe-detail">BG Subtraction<br>Contour detection<br>Area threshold check</div><div class="pipe-gate-label">DISCARD if no motion</div><div class="pipe-ms" style="color:#7dcb8f">~2–5ms</div></div>
+      <div class="pipe-stage gate" style="background:rgba(196,119,58,0.12)"><div class="pipe-num">03</div><div class="pipe-name">YOLO Inference</div><div class="pipe-detail">YOLO 11n · ONNX<br>NMS post-process<br>Class + confidence</div><div class="pipe-gate-label" style="color:var(--accent)">ONLY on motion frames</div><div class="pipe-ms">50–500ms</div></div>
+      <div class="pipe-stage"><div class="pipe-num">04</div><div class="pipe-name">Centroid Track</div><div class="pipe-detail">Assign object IDs<br>Distance matching<br>Disappear timeout</div><div class="pipe-ms">~10ms</div></div>
+      <div class="pipe-stage"><div class="pipe-num">05</div><div class="pipe-name">Event & Record</div><div class="pipe-detail">MQTT publish<br>SQLite insert<br>JPEG snapshot<br>FFmpeg MP4 clip</div><div class="pipe-ms">~5ms</div></div>
+    </div>
+    <div class="two-stage fi d3">
+      <div class="stage-box s1"><h4>Stage 1 — MOG2 Background Subtraction</h4><p>OpenCV's Mixture of Gaussians 2 maintains a per-pixel statistical background model. Each frame is compared against this model; pixels that deviate past a threshold are marked as foreground. Connected contours below a minimum area are discarded. No neural network involved — this runs entirely on CPU at ~2–5ms per frame.</p><span class="stage-pill">MOG2 · contour area threshold · ~2–5ms/frame · CPU only</span></div>
+      <div class="stage-box s2"><h4>Stage 2 — YOLO 11 Object Detection</h4><p>Only frames flagged by MOG2 are forwarded to the YOLO inference worker via IPC queue. In a typical residential scene at 10 FPS, this reduces YOLO calls from ~600/min to under 10/min — the GPU runs only when something actually moved.</p><span class="stage-pill">yolo11n.onnx · 80 COCO classes · confidence threshold configurable</span></div>
+    </div>
+    <span class="slide-n" style="color:rgba(255,255,255,0.12)">05 / 07</span>
+  </div>
+</section>
+
+<!-- 06 COMPONENTS -->
+<section class="section" data-slide="6">
+  <span class="eyebrow">06 — Component Details</span>
+  <h2 class="h-section fi" style="max-width:560px">Eight process components.<br><em>One deployable monolith.</em></h2>
+  <div class="comp-grid">
+    <div class="comp-card fi d1"><h4>Capture</h4><p>Reads video frames from RTSP, USB (/dev/videoX), or HTTP streams via OpenCV. Produces frame packets with timestamp and camera ID.</p><div class="comp-meta">camera/capture.py<br>~1–2% CPU/cam</div><div class="bar-wrap"><div class="bar-labels"><span>CPU Load</span><span>2%</span></div><div class="bar-track"><div class="bar-fill" style="width:2%"></div></div></div></div>
+    <div class="comp-card fi d2"><h4>Motion Detector</h4><p>MOG2 background subtractor + contour analysis. Discards frames below motion threshold. Feeds detection queue and pre-capture buffer simultaneously.</p><div class="comp-meta">motion/motion.py<br>~2–5ms/frame</div><div class="bar-wrap"><div class="bar-labels"><span>CPU Load</span><span>5%</span></div><div class="bar-track"><div class="bar-fill" style="width:5%"></div></div></div></div>
+    <div class="comp-card fi d3"><h4>Detector Pool</h4><p>One or more worker processes each load a copy of <code>yolo11n.onnx</code> via ONNX Runtime. Workers block on a multiprocessing queue; frames arrive only when MOG2 triggers. Pool size is configurable to match available hardware.</p><div class="comp-meta">detectors/pool.py<br>50–500ms/inference</div><div class="bar-wrap"><div class="bar-labels"><span>CPU Load (on motion)</span><span>80%</span></div><div class="bar-track"><div class="bar-fill" style="width:80%"></div></div></div></div>
+    <div class="comp-card fi d4"><h4>Object Tracker</h4><p>Centroid distance matching assigns persistent IDs across frames. Handles object disappearance with configurable timeout windows.</p><div class="comp-meta">object_processing.py<br>&lt;1% CPU · ~10ms/batch</div><div class="bar-wrap"><div class="bar-labels"><span>CPU Load</span><span>1%</span></div><div class="bar-track"><div class="bar-fill" style="width:1%"></div></div></div></div>
+    <div class="comp-card fi d1"><h4>Recorder</h4><p>Merges pre-capture circular buffer with post-detection frames. Writes H.264/H.265 MP4 clips via FFmpeg subprocess. CRF quality configurable.</p><div class="comp-meta">record/recording.py<br>~5–10% CPU during write</div><div class="bar-wrap"><div class="bar-labels"><span>CPU Load</span><span>10%</span></div><div class="bar-track"><div class="bar-fill" style="width:10%"></div></div></div></div>
+    <div class="comp-card fi d2"><h4>REST API</h4><p>FastAPI application serving status, cameras, events, recordings, and snapshots. Reads from shared state dict. Auto-generates OpenAPI spec at /docs.</p><div class="comp-meta">api/app.py · :8000<br>&lt;1% CPU on idle</div><div class="bar-wrap"><div class="bar-labels"><span>CPU Load</span><span>1%</span></div><div class="bar-track"><div class="bar-fill" style="width:1%"></div></div></div></div>
+    <div class="comp-card fi d3"><h4>Database</h4><p>SQLite-backed event store. Async writes via queue. Configurable retention policy auto-prunes old events. Zero setup required.</p><div class="comp-meta">database.py<br>~10–50 MiB RAM</div><div class="bar-wrap"><div class="bar-labels"><span>Memory</span><span>50MB</span></div><div class="bar-track"><div class="bar-fill" style="width:8%"></div></div></div></div>
+    <div class="comp-card fi d4"><h4>MQTT Publisher</h4><p>Publishes structured detection events to configurable MQTT broker. Full Home Assistant automation support via topic schema raaqib/{cam}/detection.</p><div class="comp-meta">mqtt.py<br>retain · QoS configurable</div><div class="bar-wrap"><div class="bar-labels"><span>CPU Load</span><span>&lt;1%</span></div><div class="bar-track"><div class="bar-fill" style="width:0.5%"></div></div></div></div>
+  </div>
+  <span class="slide-n">06 / 07</span>
+</section>
+
+<hr class="section-rule">
+
+<!-- 07 PERFORMANCE -->
+<section class="section" data-slide="7">
+  <span class="eyebrow">07 — Performance Characteristics</span>
+  <h2 class="h-section fi" style="max-width:560px">Efficient by design,<br><em>not by accident</em></h2>
+  <div class="perf-grid">
+    <div class="perf-card fi d1">
+      <h4>CPU Load per Component</h4>
+      <div class="perf-row"><span class="pr-label">Capture (1 camera)</span><span class="pr-val">~1–2%</span></div>
+      <div class="perf-row"><span class="pr-label">Motion detection (1 cam)</span><span class="pr-val">~2–5%</span></div>
+      <div class="perf-row"><span class="pr-label">YOLO detector (on motion)</span><span class="pr-val">~50–80%</span></div>
+      <div class="perf-row"><span class="pr-label">Tracker</span><span class="pr-val">&lt;1%</span></div>
+      <div class="perf-row"><span class="pr-label">Recorder (during write)</span><span class="pr-val">~5–10%</span></div>
+      <div class="perf-row"><span class="pr-label">API server (idle)</span><span class="pr-val">&lt;1%</span></div>
+    </div>
+    <div class="perf-card fi d2">
+      <h4>Memory Footprint</h4>
+      <div class="perf-row"><span class="pr-label">Capture process (1 cam)</span><span class="pr-val">50–100 MiB</span></div>
+      <div class="perf-row"><span class="pr-label">Motion process (1 cam)</span><span class="pr-val">20–50 MiB</span></div>
+      <div class="perf-row"><span class="pr-label">YOLO worker (model)</span><span class="pr-val">300–800 MiB</span></div>
+      <div class="perf-row"><span class="pr-label">Database + events</span><span class="pr-val">10–50 MiB</span></div>
+      <div class="perf-row" style="border-top:1px solid var(--rule);margin-top:4px;padding-top:12px"><span class="pr-label" style="font-weight:500">Total (2 cams · 2 workers)</span><span class="pr-val">~1–1.5 GiB</span></div>
+    </div>
+    <div class="perf-card fi d3">
+      <h4>End-to-End Latency</h4>
+      <div class="perf-row"><span class="pr-label">Frame capture</span><span class="pr-val">0ms</span></div>
+      <div class="perf-row"><span class="pr-label">MOG2 motion check</span><span class="pr-val">2–5ms</span></div>
+      <div class="perf-row"><span class="pr-label">YOLO inference</span><span class="pr-val">50–500ms</span></div>
+      <div class="perf-row"><span class="pr-label">Centroid tracking</span><span class="pr-val">~10ms</span></div>
+      <div class="perf-row"><span class="pr-label">Event → MQTT/DB</span><span class="pr-val">~5ms</span></div>
+      <div class="perf-row" style="border-top:1px solid var(--rule);margin-top:4px;padding-top:12px"><span class="pr-label" style="font-weight:500">Total cap → event</span><span class="pr-val">70–520ms</span></div>
+    </div>
+    <div class="eff-strip fi d2">
+      <div class="eff-stat"><div class="eff-big">98%</div><div class="eff-small">reduction in YOLO inference calls<br>vs naive continuous detection</div></div>
+      <div class="eff-stat"><div class="eff-big">2s</div><div class="eff-small">GPU-seconds per hour<br>vs 180s naive approach</div></div>
+      <div class="eff-stat"><div class="eff-big">~50MB</div><div class="eff-small">ONNX model on disk<br>no PyTorch runtime needed</div></div>
+      <div class="eff-stat"><div class="eff-big">0</div><div class="eff-small">cloud dependencies<br>fully on-device, forever</div></div>
+    </div>
+  </div>
+  <span class="slide-n">07 / 07</span>
+</section>
+
+<!-- 08 CLOSING -->
+<section id="closing" data-slide="8">
+  <span class="eyebrow">Raaqib NVR · Open Source</span>
+  <h2 class="h-display fi" style="max-width:500px;text-align:center;line-height:1.0">Intelligent.<br>Private.<br><em>Efficient.</em></h2>
+  <p class="body fi d1" style="max-width:500px;margin-top:20px;color:var(--muted)">A two-stage pipeline that gates YOLO inference behind a cheap MOG2 motion check — so the GPU only runs when a frame earns it. Single-host, single process tree, zero cloud dependencies.</p>
+  <div class="cta-row fi d2">
+    <a href="https://github.com/belliliabdelaziz/Raaqib" class="btn primary">View on GitHub</a>
+    <a href="#hero" class="btn secondary">Back to Start ↑</a>
+  </div>
+</section>
+
+</div><!-- end .slide-wrapper -->
+
+<script>
+const slides = Array.from(document.querySelectorAll('[data-slide]'))
+  .sort((a, b) => +a.dataset.slide - +b.dataset.slide);
+const total = slides.length;
+let current = 0;
+let slideMode = false;
+
+// Theme
+const themeToggle = document.getElementById('theme-toggle');
+const savedTheme = localStorage.getItem('theme') || 'light';
+if (savedTheme === 'dark') {
+  document.documentElement.setAttribute('data-theme', 'dark');
+  themeToggle.textContent = '☀️';
+}
+themeToggle.addEventListener('click', () => {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  if (isDark) {
+    document.documentElement.removeAttribute('data-theme');
+    themeToggle.textContent = '🌙';
+    localStorage.setItem('theme', 'light');
+  } else {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    themeToggle.textContent = '☀️';
+    localStorage.setItem('theme', 'dark');
+  }
+});
+
+const slidemodeToggle = document.getElementById('slidemode-toggle');
+const btnPrev = document.getElementById('btn-prev');
+const btnNext = document.getElementById('btn-next');
+const slideCounter = document.getElementById('slide-counter');
+const progress = document.getElementById('progress');
+
+function showSlide(index) {
+  slides.forEach(s => s.classList.remove('active-slide'));
+  slides[index].classList.add('active-slide');
+  slides[index].scrollTop = 0;
+  slideCounter.textContent = `${index + 1} / ${total}`;
+  btnPrev.disabled = index === 0;
+  btnNext.disabled = index === total - 1;
+  slides[index].querySelectorAll('.fi').forEach(el => {
+    el.classList.remove('v');
+    requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('v')));
+  });
+}
+
+function enterSlideMode() {
+  slideMode = true;
+  document.body.classList.add('slide-mode');
+  slidemodeToggle.textContent = 'SCROLL';
+  showSlide(current);
+}
+function exitSlideMode() {
+  slideMode = false;
+  document.body.classList.remove('slide-mode');
+  slidemodeToggle.textContent = 'SLIDES';
+  slides.forEach(s => s.classList.remove('active-slide'));
+}
+
+slidemodeToggle.addEventListener('click', () => {
+  if (slideMode) exitSlideMode(); else enterSlideMode();
+});
+btnPrev.addEventListener('click', () => {
+  if (current > 0) { current--; showSlide(current); }
+});
+btnNext.addEventListener('click', () => {
+  if (current < total - 1) { current++; showSlide(current); }
+});
+document.addEventListener('keydown', e => {
+  if (!slideMode) return;
+  if (e.code === 'Space' || e.code === 'ArrowRight') {
+    e.preventDefault();
+    if (current < total - 1) { current++; showSlide(current); }
+  } else if (e.code === 'ArrowLeft') {
+    e.preventDefault();
+    if (current > 0) { current--; showSlide(current); }
+  }
+});
+
+// Scroll progress
+window.addEventListener('scroll', () => {
+  if (slideMode) return;
+  const max = document.body.scrollHeight - window.innerHeight;
+  progress.style.width = (window.scrollY / max * 100) + '%';
+});
+
+// Fade-in on scroll
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('v'); });
+}, { threshold: 0.08 });
+document.querySelectorAll('.fi').forEach(el => obs.observe(el));
+</script>
+</body>
+</html>
