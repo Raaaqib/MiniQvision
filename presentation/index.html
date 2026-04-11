@@ -21,6 +21,9 @@ html { scroll-behavior: smooth; }
   --arch-text: #888680; --arch-bus: #eeebe4; --arch-bus-text: #a09c96;
   --arch-line: #d4d0ca; --arch-stroke: #dedad4; --arch-pool-fill: #f0ece5;
   --arch-note: #c4c0b8; --closing-bg: #f7f5f1;
+  --mock-shell: #101214; --mock-shell-2: #15191d; --mock-ink: #e8edf2;
+  --mock-muted: #8290a0; --mock-accent: #5ea2ff; --mock-live: #3ed089;
+  --scale-chip: #ece8e1;
 }
 
 /* ── DARK theme ── */
@@ -34,6 +37,9 @@ html { scroll-behavior: smooth; }
   --arch-text: #888680; --arch-bus: #2a2825; --arch-bus-text: #666360;
   --arch-line: #3a3835; --arch-stroke: #333130; --arch-pool-fill: #2a2017;
   --arch-note: #444240; --closing-bg: #141210;
+  --mock-shell: #0f1419; --mock-shell-2: #151d26; --mock-ink: #e6ecf5;
+  --mock-muted: #8192a5; --mock-accent: #73b3ff; --mock-live: #49d899;
+  --scale-chip: #26231f;
 }
 
 body {
@@ -106,6 +112,9 @@ body.slide-mode .perf-grid  { margin-top: 20px; gap: 12px; }
 body.slide-mode .stat-grid  { gap: 10px; }
 body.slide-mode .two-col    { gap: 40px; }
 body.slide-mode .two-stage  { margin-top: 16px; gap: 14px; }
+body.slide-mode .app-grid   { margin-top: 18px; gap: 12px; }
+body.slide-mode .scale-grid { margin-top: 20px; gap: 10px; }
+body.slide-mode .scale-strip { margin-top: 12px; padding: 16px; }
 
 /* Cards */
 body.slide-mode .sol-card,
@@ -117,6 +126,8 @@ body.slide-mode .perf-card h4 { margin-bottom: 12px; }
 body.slide-mode .perf-row   { margin-bottom: 7px; padding-bottom: 7px; }
 body.slide-mode .pr-label   { font-size: 0.74rem; }
 body.slide-mode .pr-val     { font-size: 0.66rem; }
+body.slide-mode .scale-card { padding: 16px; }
+body.slide-mode .scale-card p { font-size: 0.72rem; }
 
 /* Stats */
 body.slide-mode .stat-box   { padding: 16px; }
@@ -141,6 +152,13 @@ body.slide-mode .pipe-detail { font-size: 0.56rem; line-height: 1.6; }
 body.slide-mode .pipe-ms    { font-size: 0.56rem; margin-top: 5px; }
 body.slide-mode .stage-box  { padding: 20px; }
 body.slide-mode .stage-box p { font-size: 0.76rem; line-height: 1.55; margin-bottom: 10px; }
+
+/* App mock */
+body.slide-mode .ui-mock    { padding: 10px; }
+body.slide-mode .mock-main  { padding: 10px; }
+body.slide-mode .mock-kpis  { gap: 8px; margin-bottom: 10px; }
+body.slide-mode .mock-kpi strong { font-size: 0.78rem; }
+body.slide-mode .mock-feed  { min-height: 84px; }
 
 /* Efficiency strip */
 body.slide-mode .eff-strip  { padding: 20px; }
@@ -340,6 +358,58 @@ body.slide-mode #slide-nav { display: flex; }
 .bar-track  { height: 3px; background: var(--rule); border-radius: 2px; overflow: hidden; }
 .bar-fill   { height: 100%; border-radius: 2px; background: var(--ink); }
 
+/* ── Application/UI ── */
+.app-grid { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 24px; margin-top: 42px; align-items: start; }
+.app-points { display: grid; gap: 10px; margin-top: 18px; }
+.app-point { background: var(--surface); border-radius: 9px; padding: 16px 18px; }
+.app-point strong { display: block; font-size: 0.85rem; font-weight: 500; color: var(--ink); margin-bottom: 4px; }
+.app-point span { font-size: 0.76rem; line-height: 1.55; color: var(--muted); }
+.ui-mock {
+  background: linear-gradient(160deg, var(--mock-shell) 0%, var(--mock-shell-2) 100%);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  padding: 12px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.22);
+}
+.mock-top { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,0.04); }
+.mock-pill { font-family: 'JetBrains Mono', monospace; font-size: 0.54rem; letter-spacing: 0.08em; border-radius: 100px; padding: 3px 8px; color: var(--mock-ink); }
+.mock-pill.live { background: rgba(62,208,137,0.16); color: var(--mock-live); }
+.mock-id, .mock-time { font-family: 'JetBrains Mono', monospace; font-size: 0.56rem; color: var(--mock-muted); letter-spacing: 0.05em; }
+.mock-time { text-align: right; }
+.mock-body { margin-top: 10px; display: grid; grid-template-columns: 138px 1fr; gap: 10px; }
+.mock-side { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 10px 8px; }
+.mock-side span { display: block; font-family: 'JetBrains Mono', monospace; font-size: 0.56rem; color: var(--mock-muted); padding: 7px 8px; border-radius: 6px; letter-spacing: 0.04em; }
+.mock-side span.active { background: rgba(94,162,255,0.17); color: var(--mock-accent); }
+.mock-main { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 12px; }
+.mock-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
+.mock-kpi { border-radius: 7px; padding: 8px; background: rgba(255,255,255,0.04); }
+.mock-kpi span { display: block; font-family: 'JetBrains Mono', monospace; font-size: 0.5rem; color: var(--mock-muted); margin-bottom: 4px; }
+.mock-kpi strong { font-size: 0.82rem; font-weight: 500; color: var(--mock-ink); }
+.mock-feeds { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.mock-feed { min-height: 96px; border-radius: 8px; background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)); border: 1px solid rgba(255,255,255,0.06); position: relative; overflow: hidden; }
+.mock-feed span { position: absolute; top: 8px; left: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.5rem; color: var(--mock-ink); letter-spacing: 0.06em; }
+.mock-dbox { position: absolute; width: 34px; height: 52px; border: 1px solid var(--mock-accent); right: 12px; bottom: 12px; border-radius: 3px; }
+
+/* ── Scalability ── */
+.scale-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 44px; }
+.scale-card { background: var(--surface); border-radius: 10px; padding: 24px 22px; }
+.scale-kicker { font-family: 'JetBrains Mono', monospace; font-size: 0.56rem; color: var(--faint); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 10px; }
+.scale-card h4 { font-size: 0.9rem; font-weight: 500; color: var(--ink); margin-bottom: 8px; line-height: 1.35; }
+.scale-card p { font-size: 0.78rem; font-weight: 300; line-height: 1.65; color: var(--muted); margin-bottom: 12px; }
+.scale-chip { font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; color: var(--muted); background: var(--scale-chip); border-radius: 4px; padding: 5px 8px; display: inline-block; letter-spacing: 0.05em; }
+.scale-strip {
+  margin-top: 22px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--rule);
+}
+.scale-stat { background: var(--surface); padding: 16px 14px; }
+.scale-stat .n { font-family: 'DM Serif Display', serif; font-size: 1.5rem; color: var(--ink); line-height: 1; margin-bottom: 5px; }
+.scale-stat .l { font-size: 0.72rem; color: var(--muted); line-height: 1.45; }
+
 /* ── Performance ── */
 .perf-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 52px; }
 .perf-card { background: var(--surface); border-radius: 10px; padding: 28px 24px; }
@@ -369,11 +439,16 @@ body.slide-mode #slide-nav { display: flex; }
   .section { padding: 80px 32px 72px; }
   .section-rule { margin: 0 32px; }
   .two-col   { grid-template-columns: 1fr; gap: 48px; }
+  .app-grid  { grid-template-columns: 1fr; }
   .sol-grid  { grid-template-columns: 1fr 1fr; }
   .comp-grid { grid-template-columns: 1fr 1fr; }
+  .scale-grid { grid-template-columns: 1fr; }
+  .scale-strip { grid-template-columns: 1fr 1fr; }
   .perf-grid { grid-template-columns: 1fr; }
   .two-stage { grid-template-columns: 1fr; }
   .pipe-flow { flex-direction: column; }
+  .mock-body { grid-template-columns: 1fr; }
+  .mock-kpis { grid-template-columns: 1fr 1fr; }
   #pipeline  { padding: 80px 32px; }
   .eff-strip { flex-direction: column; gap: 24px; }
   .eff-stat + .eff-stat { border-left: none; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 24px; }
@@ -392,7 +467,7 @@ body.slide-mode #slide-nav { display: flex; }
 
 <div id="slide-nav">
   <button class="nav-btn" id="btn-prev">← Prev</button>
-  <span id="slide-counter">1 / 8</span>
+  <span id="slide-counter">1 / 10</span>
   <button class="nav-btn" id="btn-next">Next →</button>
   <span id="space-hint">space</span>
 </div>
@@ -405,7 +480,7 @@ body.slide-mode #slide-nav { display: flex; }
     <span class="eyebrow">01 — Introduction</span>
     <h1 class="h-display" style="max-width:560px">Raaqib<br><em>NVR</em></h1>
     <p class="body" style="max-width:400px;margin-top:20px">
-      An intelligent, open-source Network Video Recorder powered by a two-stage AI detection pipeline — built for privacy-first, on-device surveillance.
+      An intelligent, open-source Network Video Recorder powered by a two-stage AI Innovation pipeline — built for privacy-first, on-device surveillance.
     </p>
     <div class="hero-tags">
       <span class="tag hi">YOLO v11</span>
@@ -451,7 +526,7 @@ body.slide-mode #slide-nav { display: flex; }
   <div class="two-col">
     <div>
       <h2 class="h-section">Surveillance that<br><em>burns resources</em><br>for nothing</h2>
-      <p class="body" style="margin-top:20px">Traditional NVR systems run object detection on every frame, 24/7. In a typical residential setting, cameras capture hours of empty corridors, quiet parking lots, and unchanged scenes — yet expensive GPU cycles are wasted on every single frame.</p>
+      <p class="body" style="margin-top:20px">Traditional NVR systems run object detection on every frame, 24/7. In a typical residential setting, cameras capture hours of empty corridors, quiet parking lots, and unchanged scenes — yet expensive GPU cycles are wasted on every single frame. The innovation opportunity is in deciding which frames deserve AI.</p>
       <div class="pills">
         <div class="pill"><div class="pill-icon">⚡</div><div><strong>Massive Resource Waste</strong><span>Continuous YOLO inference on idle scenes consumes 180+ GPU-seconds per hour per camera, even when nothing is happening.</span></div></div>
         <div class="pill"><div class="pill-icon">🔒</div><div><strong>Privacy Risk</strong><span>Cloud-based NVR solutions upload footage to third-party servers. There's no control over who processes your camera data.</span></div></div>
@@ -466,25 +541,25 @@ body.slide-mode #slide-nav { display: flex; }
       <div class="stat-box wide"><div class="n">The bottleneck is not the camera — it's how we process it.</div><div class="l">Most frames don't need AI. They need a fast, cheap discard decision.</div></div>
     </div>
   </div>
-  <span class="slide-n">02 / 07</span>
+  <span class="slide-n">02 / 09</span>
 </section>
 
 <hr class="section-rule">
 
 <!-- 03 SOLUTION -->
 <section class="section" data-slide="3">
-  <span class="eyebrow">03 — The Idea</span>
-  <h2 class="h-section fi" style="max-width:640px">Smart gating: only run AI<br>when <em>something moves</em></h2>
-  <p class="body fi d1" style="max-width:600px;margin-top:16px">Raaqib introduces a two-stage detection pipeline — a cheap motion filter gates expensive YOLO inference. Frames with no motion are discarded in milliseconds. Only frames that matter reach the neural network.</p>
+  <span class="eyebrow">03 — The Innovation</span>
+  <h2 class="h-section fi" style="max-width:640px">Innovation in one line: run AI<br>only when <em>something moves</em></h2>
+  <p class="body fi d1" style="max-width:600px;margin-top:16px">Raaqib's core innovation is a two-stage detection pipeline — a cheap motion filter gates expensive YOLO inference. Frames with no motion are discarded in milliseconds. Only frames that matter reach the neural network.</p>
   <div class="sol-grid">
-    <div class="sol-card fi d1"><div class="sol-num">01</div><h3>Two-Stage Pipeline</h3><p>MOG2 background subtraction runs first — a fast CPU check. Only motion-positive frames are forwarded to YOLO 11, slashing GPU load by 98%.</p></div>
+    <div class="sol-card fi d1"><div class="sol-num">01</div><h3>Two-Stage Innovation Pipeline</h3><p>MOG2 background subtraction runs first — a fast CPU check. Only motion-positive frames are forwarded to YOLO 11, slashing GPU load by 98%.</p></div>
     <div class="sol-card fi d2"><div class="sol-num">02</div><h3>Distributed Multiprocessing</h3><p>Every component — capture, motion, detection, tracking, recording — runs as an isolated OS process. No Python GIL. True parallelism across all CPU cores.</p></div>
     <div class="sol-card fi d3"><div class="sol-num">03</div><h3>100% On-Device</h3><p>No cloud. No subscriptions. All inference, storage, and processing stays on your hardware. Integrates with Home Assistant via MQTT for local automation.</p></div>
     <div class="sol-card fi d1"><div class="sol-num">04</div><h3>ONNX Runtime</h3><p>Model weights exported to ONNX — 50× smaller than PyTorch, faster CPU inference, zero deep learning framework overhead at runtime.</p></div>
     <div class="sol-card fi d2"><div class="sol-num">05</div><h3>Smart Recording</h3><p>Pre-capture circular buffer ensures you never miss the moment before detection. FFmpeg H.264/H.265 encoding with automatic retention management.</p></div>
     <div class="sol-card fi d3"><div class="sol-num">06</div><h3>REST API + React UI</h3><p>Full FastAPI REST interface. React dashboard for live monitoring, event browsing, and clip management. OpenAPI spec auto-generated.</p></div>
   </div>
-  <span class="slide-n">03 / 07</span>
+  <span class="slide-n">03 / 09</span>
 </section>
 
 <hr class="section-rule">
@@ -565,7 +640,7 @@ body.slide-mode #slide-nav { display: flex; }
       <text x="450" y="358" text-anchor="middle" fill="var(--arch-note)" font-size="8" letter-spacing="0.12em">ALL PROCESSES ISOLATED VIA mp.Process() + IPC QUEUES · STOP EVENT FOR GRACEFUL SHUTDOWN</text>
     </svg>
   </div>
-  <span class="slide-n">04 / 07</span>
+  <span class="slide-n">04 / 09</span>
 </section>
 
 <!-- 05 PIPELINE -->
@@ -585,7 +660,7 @@ body.slide-mode #slide-nav { display: flex; }
       <div class="stage-box s1"><h4>Stage 1 — MOG2 Background Subtraction</h4><p>The Mixture of Gaussians model maintains a statistical background model per pixel. It flags deviations as foreground — no neural network required. Running on every frame at ~2ms/frame, it acts as a lightweight gatekeeper.</p><span class="stage-pill">2% motion threshold · contour area filter · ~2–5ms</span></div>
       <div class="stage-box s2"><h4>Stage 2 — YOLO 11 Object Detection</h4><p>Only frames that pass Stage 1 reach the YOLO inference engine. This cuts average YOLO calls from 600/min to just 2–10/min in typical residential scenarios — a 98% reduction.</p><span class="stage-pill">yolo11n.onnx · 80 classes · confidence threshold configurable</span></div>
     </div>
-    <span class="slide-n" style="color:rgba(255,255,255,0.12)">05 / 07</span>
+    <span class="slide-n" style="color:rgba(255,255,255,0.12)">05 / 09</span>
   </div>
 </section>
 
@@ -603,14 +678,100 @@ body.slide-mode #slide-nav { display: flex; }
     <div class="comp-card fi d3"><h4>Database</h4><p>SQLite-backed event store. Async writes via queue. Configurable retention policy auto-prunes old events. Zero setup required.</p><div class="comp-meta">database.py<br>~10–50 MiB RAM</div><div class="bar-wrap"><div class="bar-labels"><span>Memory</span><span>50MB</span></div><div class="bar-track"><div class="bar-fill" style="width:8%"></div></div></div></div>
     <div class="comp-card fi d4"><h4>MQTT Publisher</h4><p>Publishes structured detection events to configurable MQTT broker. Full Home Assistant automation support via topic schema raaqib/{cam}/detection.</p><div class="comp-meta">mqtt.py<br>retain · QoS configurable</div><div class="bar-wrap"><div class="bar-labels"><span>CPU Load</span><span>&lt;1%</span></div><div class="bar-track"><div class="bar-fill" style="width:0.5%"></div></div></div></div>
   </div>
-  <span class="slide-n">06 / 07</span>
+  <span class="slide-n">06 / 09</span>
 </section>
 
 <hr class="section-rule">
 
-<!-- 07 PERFORMANCE -->
+<!-- 07 UI / APPLICATION -->
 <section class="section" data-slide="7">
-  <span class="eyebrow">07 — Performance Characteristics</span>
+  <span class="eyebrow">07 — Application & UI</span>
+  <h2 class="h-section fi" style="max-width:680px">FastAPI + React dashboard.<br><em>Built to operate, not just demo.</em></h2>
+  <p class="body fi d1" style="max-width:680px;margin-top:14px">Raaqib exposes a complete FastAPI backend and a React interface for live monitoring, event review, recordings, snapshots, and system settings. This is the operator-facing app layer judges can score directly.</p>
+  <div class="app-grid">
+    <div class="fi d1">
+      <div class="app-points">
+        <div class="app-point"><strong>Live Monitor + Event Timeline</strong><span>Operators watch active cameras, inspect object IDs, and jump to detections without leaving the dashboard.</span></div>
+        <div class="app-point"><strong>FastAPI REST Surface</strong><span>Status, cameras, events, recordings, and snapshots are all exposed via documented endpoints at <code>/docs</code>.</span></div>
+        <div class="app-point"><strong>Local-First UX</strong><span>No cloud dependency. UI talks to the local API, preserving privacy while keeping latency low.</span></div>
+        <div class="app-point"><strong>Automation Ready</strong><span>MQTT events and REST endpoints make Home Assistant and custom integrations straightforward.</span></div>
+      </div>
+    </div>
+    <div class="ui-mock fi d2" aria-label="Raaqib React dashboard mockup">
+      <div class="mock-top">
+        <span class="mock-pill live">LIVE</span>
+        <span class="mock-id">RAAQIB DASHBOARD · localhost:5173</span>
+        <span class="mock-time">12:40:21</span>
+      </div>
+      <div class="mock-body">
+        <div class="mock-side">
+          <span class="active">Live Monitor</span>
+          <span>Events</span>
+          <span>Recordings</span>
+          <span>Snapshots</span>
+          <span>Settings</span>
+        </div>
+        <div class="mock-main">
+          <div class="mock-kpis">
+            <div class="mock-kpi"><span>Active Cameras</span><strong>04</strong></div>
+            <div class="mock-kpi"><span>Motion Events</span><strong>17</strong></div>
+            <div class="mock-kpi"><span>Current FPS</span><strong>10.0</strong></div>
+            <div class="mock-kpi"><span>Detections</span><strong>03</strong></div>
+          </div>
+          <div class="mock-feeds">
+            <div class="mock-feed"><span>CAM_01 · FRONT_DOOR</span><div class="mock-dbox"></div></div>
+            <div class="mock-feed"><span>CAM_02 · PARKING</span><div class="mock-dbox"></div></div>
+            <div class="mock-feed"><span>CAM_03 · LOBBY</span><div class="mock-dbox"></div></div>
+            <div class="mock-feed"><span>CAM_04 · SIDE_GATE</span><div class="mock-dbox"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <span class="slide-n">07 / 09</span>
+</section>
+
+<hr class="section-rule">
+
+<!-- 08 SCALABILITY -->
+<section class="section" data-slide="8">
+  <span class="eyebrow">08 — Scalability & Portability</span>
+  <h2 class="h-section fi" style="max-width:700px">Scale cameras and compute independently.<br><em>No redesign required.</em></h2>
+  <p class="body fi d1" style="max-width:700px;margin-top:14px">The architecture scales by composition: per-camera capture/motion workers, a tunable detector pool, and hardware-aware runtime choices (CPU, NVIDIA, AMD, Apple, Edge TPU). One codebase, many deployment tiers.</p>
+  <div class="scale-grid">
+    <div class="scale-card fi d1">
+      <div class="scale-kicker">Detector Pool Elasticity</div>
+      <h4>Increase throughput by tuning <code>pool_size</code></h4>
+      <p>YOLO workers consume a shared detection queue. During motion bursts, add workers to prevent backlog and keep end-to-end latency stable.</p>
+      <span class="scale-chip">detection.pool_size: 2 → 4 → 8</span>
+    </div>
+    <div class="scale-card fi d2">
+      <div class="scale-kicker">Per-Camera Isolation</div>
+      <h4>Each camera gets dedicated capture + motion processes</h4>
+      <p>Noisy or failing streams do not cascade across the system. IPC queues and stop events keep failure domains bounded and shutdown graceful.</p>
+      <span class="scale-chip">N cameras = N isolated ingest paths</span>
+    </div>
+    <div class="scale-card fi d3">
+      <div class="scale-kicker">Hardware Portability</div>
+      <h4>Runs on Raspberry Pi, mini PC, or GPU workstation</h4>
+      <p>Use ONNX Runtime for lean inference and choose model size by hardware tier. Same architecture supports edge deployments and higher-end installs.</p>
+      <span class="scale-chip">Raspberry Pi · CPU · NVIDIA · AMD · Apple</span>
+    </div>
+  </div>
+  <div class="scale-strip fi d4">
+    <div class="scale-stat"><div class="n">2–5ms</div><div class="l">Stage-1 motion check enables cheap scaling at the edge</div></div>
+    <div class="scale-stat"><div class="n">50–500ms</div><div class="l">Stage-2 inference amortized only across motion-positive frames</div></div>
+    <div class="scale-stat"><div class="n">98%</div><div class="l">Reduction in YOLO calls preserves headroom as cameras increase</div></div>
+    <div class="scale-stat"><div class="n">1 codebase</div><div class="l">Portable runtime profile from low-power to high-throughput</div></div>
+  </div>
+  <span class="slide-n">08 / 09</span>
+</section>
+
+<hr class="section-rule">
+
+<!-- 09 PERFORMANCE -->
+<section class="section" data-slide="9">
+  <span class="eyebrow">09 — Performance Characteristics</span>
   <h2 class="h-section fi" style="max-width:560px">Efficient by design,<br><em>not by accident</em></h2>
   <div class="perf-grid">
     <div class="perf-card fi d1">
@@ -646,11 +807,11 @@ body.slide-mode #slide-nav { display: flex; }
       <div class="eff-stat"><div class="eff-big">0</div><div class="eff-small">cloud dependencies<br>fully on-device, forever</div></div>
     </div>
   </div>
-  <span class="slide-n">07 / 07</span>
+  <span class="slide-n">09 / 09</span>
 </section>
 
-<!-- 08 CLOSING -->
-<section id="closing" data-slide="8">
+<!-- 10 CLOSING -->
+<section id="closing" data-slide="10">
   <span class="eyebrow">Raaqib NVR · Open Source</span>
   <h2 class="h-display fi" style="max-width:500px;text-align:center;line-height:1.0">Intelligent.<br>Private.<br><em>Efficient.</em></h2>
   <p class="body fi d1" style="max-width:500px;margin-top:20px;color:var(--muted)">A two-stage AI pipeline that treats your compute like the resource it is — wasting zero cycles on empty frames, running everything on your own hardware.</p>
