@@ -32,7 +32,7 @@ services:
     # On Windows/macOS, comment out this entire block (use RTSP sources instead).
     # Add more entries if you have additional cameras.
     devices:
-      - /dev/video0:/dev/video0
+      - /dev/video1:/dev/video0
       - /dev/video1:/dev/video1
     # Shared memory size — needed for Python multiprocessing Manager()
     shm_size: 256mb
