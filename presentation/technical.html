@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raaqib | Technical Deep Dive</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --canvas: #F8F9FA;
+            --surface: #FFFFFF;
+            --ink: #212529;
+            --accent: #4E79A7;
+            --line: #DDE2E7;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: "Inter", sans-serif;
+            color: var(--ink);
+            background: var(--canvas);
+            line-height: 1.55;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            min-height: 100vh;
+        }
+
+        aside {
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            background: var(--surface);
+            border-right: 1px solid var(--line);
+            padding: 2rem 1.25rem;
+        }
+
+        .brand {
+            font-size: 1.1rem;
+            font-weight: 800;
+            letter-spacing: 0.03em;
+            margin-bottom: 1.75rem;
+        }
+
+        .brand span {
+            color: var(--accent);
+        }
+
+        nav ul {
+            list-style: none;
+            display: grid;
+            gap: 0.65rem;
+        }
+
+        nav a {
+            color: var(--ink);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            border-left: 3px solid transparent;
+            padding: 0.35rem 0.6rem;
+            transition: all 180ms ease;
+        }
+
+        nav a:hover,
+        nav a:focus-visible {
+            color: var(--accent);
+            border-left-color: var(--accent);
+            background: rgba(78, 121, 167, 0.08);
+            outline: none;
+        }
+
+        main {
+            width: min(1120px, calc(100% - 4rem));
+            margin: 0 auto;
+        }
+
+        .slide {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid var(--line);
+            padding: 4.5rem 0;
+        }
+
+        .stack {
+            width: 100%;
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity 550ms ease, transform 550ms ease;
+        }
+
+        .stack.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .eyebrow {
+            color: var(--accent);
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+            margin-bottom: 0.85rem;
+        }
+
+        h1 {
+            font-size: clamp(2.2rem, 5.5vw, 4rem);
+            line-height: 1.08;
+            letter-spacing: -0.03em;
+            margin-bottom: 1rem;
+        }
+
+        h2 {
+            font-size: clamp(1.7rem, 4vw, 2.6rem);
+            line-height: 1.15;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.9rem;
+        }
+
+        h3 {
+            font-size: 1.12rem;
+            margin-bottom: 0.55rem;
+            letter-spacing: -0.01em;
+        }
+
+        p {
+            font-size: clamp(1rem, 1.2vw, 1.12rem);
+            max-width: 72ch;
+        }
+
+        .lead {
+            font-size: clamp(1.1rem, 1.4vw, 1.3rem);
+            font-weight: 500;
+            margin-top: 0.5rem;
+            max-width: 62ch;
+        }
+
+        .kpi-grid,
+        .stage-grid,
+        .blackbox-grid,
+        .support-grid {
+            margin-top: 1.5rem;
+            display: grid;
+            gap: 1rem;
+            grid-template-columns: repeat(12, minmax(0, 1fr));
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 1.25rem;
+        }
+
+        .stage {
+            grid-column: span 6;
+            border-top: 4px solid var(--accent);
+        }
+
+        .stage .tag {
+            display: inline-block;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 0.55rem;
+        }
+
+        .diagram {
+            margin-top: 1.5rem;
+            padding: 1.25rem;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: var(--surface);
+        }
+
+        .flow {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(110px, 1fr));
+            gap: 0.7rem;
+            align-items: center;
+        }
+
+        .node {
+            border: 1px solid var(--line);
+            border-left: 4px solid var(--accent);
+            border-radius: 10px;
+            background: var(--canvas);
+            padding: 0.8rem;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.92rem;
+        }
+
+        .arrow {
+            text-align: center;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .kpi {
+            grid-column: span 4;
+            text-align: center;
+        }
+
+        .kpi strong {
+            color: var(--accent);
+            display: block;
+            font-size: clamp(1.6rem, 3.6vw, 2.2rem);
+            margin-bottom: 0.25rem;
+        }
+
+        .kpi small {
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .blackbox-item {
+            grid-column: span 6;
+        }
+
+        .blackbox-item ul {
+            margin-left: 1rem;
+            margin-top: 0.45rem;
+            display: grid;
+            gap: 0.2rem;
+        }
+
+        .code {
+            margin-top: 1rem;
+            border-radius: 10px;
+            overflow: auto;
+            border: 1px solid var(--line);
+            background: #EFF3F7;
+            padding: 1rem;
+            font-size: 0.9rem;
+            line-height: 1.45;
+        }
+
+        .support-card {
+            grid-column: span 4;
+            text-align: center;
+        }
+
+        code {
+            background: #EFF3F7;
+            padding: 0.08rem 0.3rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 980px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+
+            aside {
+                position: relative;
+                height: auto;
+                border-right: 0;
+                border-bottom: 1px solid var(--line);
+            }
+
+            main {
+                width: min(1120px, calc(100% - 2rem));
+            }
+
+            .slide {
+                min-height: auto;
+                padding: 3.5rem 0;
+            }
+
+            .stage,
+            .kpi,
+            .blackbox-item,
+            .support-card {
+                grid-column: span 12;
+            }
+
+            .flow {
+                grid-template-columns: 1fr;
+            }
+
+            .arrow {
+                transform: rotate(90deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <aside>
+            <div class="brand"><span>RAAQIB</span> Deep Dive</div>
+            <nav aria-label="Technical sections">
+                <ul>
+                    <li><a href="#overview">System Intent</a></li>
+                    <li><a href="#pipeline">Two-Stage Pipeline</a></li>
+                    <li><a href="#architecture">Process Architecture</a></li>
+                    <li><a href="#blackbox">Open the Black Box</a></li>
+                    <li><a href="#benchmarks">Benchmarks</a></li>
+                    <li><a href="#hardware">Hardware Support</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main>
+            <section class="slide" id="overview">
+                <article class="stack">
+                    <p class="eyebrow">Technical Narrative</p>
+                    <h1>Engineering a Unicorn NVR Without Wasting Compute</h1>
+                    <p class="lead">Raaqib applies distributed multiprocessing to bypass Python GIL bottlenecks, then routes video through a selective inference path so expensive AI runs only when motion exists.</p>
+                    <div class="kpi-grid" aria-label="Core outcomes">
+                        <div class="card kpi"><strong>98%</strong><small>GPU load reduction potential</small></div>
+                        <div class="card kpi"><strong>70-100ms</strong><small>Event emission latency target</small></div>
+                        <div class="card kpi"><strong>2-stage</strong><small>Decision pipeline for scale</small></div>
+                    </div>
+                </article>
+            </section>
+
+            <section class="slide" id="pipeline">
+                <article class="stack">
+                    <p class="eyebrow">Core Logic</p>
+                    <h2>The Two-Stage Detection Pipeline</h2>
+                    <p>Detection is split into a low-cost trigger stage and a high-precision classification stage, giving strong accuracy with significantly lower continuous compute demand.</p>
+                    <div class="stage-grid">
+                        <div class="card stage">
+                            <span class="tag">Stage 1 | OpenCV MOG2</span>
+                            <h3>Motion Detection</h3>
+                            <p>Runs on every frame at camera FPS. Builds dynamic background models, filters contours, and passes only motion-positive frames forward.</p>
+                            <p><strong>Cost:</strong> roughly 2-5ms/frame on CPU.</p>
+                        </div>
+                        <div class="card stage">
+                            <span class="tag">Stage 2 | YOLO 11 + ONNX</span>
+                            <h3>Object Identification</h3>
+                            <p>Activates only when motion is detected. Performs inference, confidence filtering, and class mapping for events like person, vehicle, or animal.</p>
+                            <p><strong>Cost:</strong> roughly 50-500ms/frame depending on hardware.</p>
+                        </div>
+                    </div>
+                </article>
+            </section>
+
+            <section class="slide" id="architecture">
+                <article class="stack">
+                    <p class="eyebrow">Distributed Processes</p>
+                    <h2>Process Architecture and Flow</h2>
+                    <p>Each core function executes in an isolated process and communicates through dedicated queues to preserve throughput and fault isolation.</p>
+                    <div class="diagram" role="img" aria-label="Capture to event architecture flow">
+                        <div class="flow">
+                            <div class="node">Capture</div>
+                            <div class="arrow">→</div>
+                            <div class="node">Motion</div>
+                            <div class="arrow">→</div>
+                            <div class="node">Detector Pool</div>
+                        </div>
+                        <div class="flow" style="margin-top: 0.7rem;">
+                            <div class="node">Tracking</div>
+                            <div class="arrow">→</div>
+                            <div class="node">Event Processor</div>
+                            <div class="arrow">→</div>
+                            <div class="node">MQTT | DB | Recorder</div>
+                        </div>
+                    </div>
+                    <pre class="code"><code># Parallel YOLO workers
+while not stop_event.is_set():
+    frame_packet = detection_queue.get(timeout=1)
+    detections = yolo_model(frame_packet.frame)
+    tracking_queue.put(detections)</code></pre>
+                </article>
+            </section>
+
+            <section class="slide" id="blackbox">
+                <article class="stack">
+                    <p class="eyebrow">Open The Black Box</p>
+                    <h2>A to Z AI Component Breakdown</h2>
+                    <p>The executive view frames AI as value transformation; this technical view expands every operational layer from raw frames to structured events.</p>
+                    <div class="blackbox-grid">
+                        <section class="card blackbox-item">
+                            <h3>Data Ingestion</h3>
+                            <ul>
+                                <li>RTSP/USB input captured with FFmpeg-backed decoders</li>
+                                <li>Frame packets include camera ID and timestamps</li>
+                                <li>Motion queues smooth burst traffic by camera</li>
+                            </ul>
+                        </section>
+                        <section class="card blackbox-item">
+                            <h3>Model Architecture</h3>
+                            <ul>
+                                <li>YOLO 11 exported to ONNX Runtime for lean inference</li>
+                                <li>Configurable confidence thresholds and class filters</li>
+                                <li>Pool workers parallelize detections under load</li>
+                            </ul>
+                        </section>
+                        <section class="card blackbox-item">
+                            <h3>Processing Pipeline</h3>
+                            <ul>
+                                <li>Centroid-based tracking assigns persistent IDs</li>
+                                <li>Event processor fans out to MQTT and SQLite</li>
+                                <li>Recording service merges pre/post capture buffers</li>
+                            </ul>
+                        </section>
+                        <section class="card blackbox-item">
+                            <h3>Output Generation</h3>
+                            <ul>
+                                <li>API endpoints expose health, events, clips, snapshots</li>
+                                <li>MQTT topics power Home Assistant and automation flows</li>
+                                <li>Structured artifacts support real-time and forensic use</li>
+                            </ul>
+                        </section>
+                    </div>
+                </article>
+            </section>
+
+            <section class="slide" id="benchmarks">
+                <article class="stack">
+                    <p class="eyebrow">Operational Impact</p>
+                    <h2>Efficiency Benchmarks</h2>
+                    <p>At 10 FPS capture, continuous YOLO can consume ~180 GPU-seconds/hour. Under two-stage gating with sparse motion events, this drops to roughly ~2 GPU-seconds/hour.</p>
+                    <div class="kpi-grid">
+                        <div class="card kpi"><strong>180s/h</strong><small>GPU use with continuous YOLO</small></div>
+                        <div class="card kpi"><strong>2s/h</strong><small>GPU use with motion gating</small></div>
+                        <div class="card kpi"><strong>~1-1.5GB</strong><small>Typical memory footprint (2 cams)</small></div>
+                    </div>
+                </article>
+            </section>
+
+            <section class="slide" id="hardware">
+                <article class="stack">
+                    <p class="eyebrow">Deployment Flexibility</p>
+                    <h2>Hardware-Agnostic Inference Support</h2>
+                    <p>Raaqib supports multi-platform acceleration paths with a single architecture and configurable model profiles.</p>
+                    <div class="support-grid">
+                        <div class="card support-card"><h3>CUDA</h3><p>NVIDIA GPU inference path for high-throughput installations.</p></div>
+                        <div class="card support-card"><h3>MPS</h3><p>Apple Silicon acceleration for efficient local deployments.</p></div>
+                        <div class="card support-card"><h3>TPU</h3><p>Google Coral edge acceleration for low-power environments.</p></div>
+                    </div>
+                    <p style="margin-top: 1.2rem;">Model execution is selected at runtime using device configuration values such as <code>cpu</code>, <code>cuda</code>, <code>mps</code>, or <code>tpu</code>.</p>
+                </article>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        const revealBlocks = document.querySelectorAll('.stack');
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.2 });
+
+        revealBlocks.forEach((block) => observer.observe(block));
+    </script>
+</body>
+</html>

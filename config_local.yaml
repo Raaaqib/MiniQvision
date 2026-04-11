@@ -18,24 +18,39 @@ cameras:
     fps_target: 10
     width: 640
     height: 480
-    # Dual-stream: detect at half-res — ~3x faster ONNX, same accuracy for close-range
     detect_width: 320
     detect_height: 240
-    detect_fps: 5          # only 5fps needed for AI — halves detection CPU load
+    detect_fps: 5          
     min_contour_area: 1500
     motion_threshold: 0.005
     retain_days: 7
-
+#ffmpeg -re -stream_loop -1 -i "C:\Users\HP\Desktop\recording_2025-09-15_16-53-53.avi" -c:v libx264 -preset ultrafast -tune zerolatency -rtsp_transport tcp -f rtsp rtsp://localhost:8554/ppe_camera
   - id: cam2
     name: "DroidCam Video" 
-    source: "0"          # Integrated Webcam (index 0)
-    model: fire
+    source:  "rtsp://localhost:8554/ppe_camera"      
+    model: ppe
     enabled: true
     fps_target: 10
     width: 640
     height: 480
     detect_width: 320
     detect_height: 240
+    detect_fps: 8
+    min_contour_area: 1500
+    motion_threshold: 0.005
+    retain_days: 7
+#  ffmpeg -re -stream_loop -1 -i "c:\Users\HP\Desktop\posVideo6.875.avi" -c:v libx264 -preset ultrafast -tune zerolatency -rtsp_transport tcp -f rtsp rtsp://localhost:8554/fire_camera
+
+  - id: cam3
+    name: "DroidCam Video 2"
+    source:  "rtsp://localhost:8554/fire_camera"
+    model: fire
+    enabled: true
+    fps_target: 10
+    width: 640
+    height: 480
+    detect_width: 640
+    detect_height: 480
     detect_fps: 5
     min_contour_area: 1500
     motion_threshold: 0.005
@@ -82,8 +97,12 @@ models:
     confidence_threshold: 0.45
     pool_size: 1
     classes: ["fire", "smoke"]
-    
-
+  ppe:
+    path: "models/ppe_model.onnx"
+    device: "cpu"
+    confidence_threshold: 0.25
+    pool_size: 1
+    classes: []
   # Example variants (enable only when model files exist):
   # lpr:
   #   path: "models/lpr_yolo11n.onnx"
